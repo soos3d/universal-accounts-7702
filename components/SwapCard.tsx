@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React from "react";
@@ -28,6 +29,8 @@ interface SwapCardProps {
   onChainChange: (chain: string) => void;
   onAmountChange: (amount: string) => void;
   onSwap: () => void;
+  onOpenTokenSelection?: () => void;
+  onOpenChainSelection?: () => void;
 }
 
 export function SwapCard({
@@ -41,6 +44,8 @@ export function SwapCard({
   onChainChange,
   onAmountChange,
   onSwap,
+  onOpenTokenSelection,
+  onOpenChainSelection,
 }: SwapCardProps) {
   const getAssetBalance = (assetType: string) => {
     if (!balance?.assets) return null;
@@ -66,154 +71,203 @@ export function SwapCard({
   };
 
   return (
-    <div className="bg-gray-900/80 backdrop-blur-sm rounded-2xl p-5 border border-gray-800">
-      <h2 className="text-lg font-semibold mb-4">Swap</h2>
+    <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-xl h-[600px] flex flex-col">
+      <h2 className="text-xl font-semibold mb-6 text-white shrink-0">
+        Exchange
+      </h2>
 
-      <div className="bg-gray-800/50 rounded-xl p-4 mb-3">
-        <span className="text-xs text-gray-400 uppercase tracking-wide">
+      <div className="bg-white/5 rounded-xl p-5 mb-3 border border-white/10">
+        <span className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-3 block">
           Receive
         </span>
-        <div className="flex items-center justify-between mt-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="h-auto p-0 hover:bg-transparent text-lg font-medium text-white"
-              >
-                {selectedAsset ? (
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={LOGO_URLS[selectedAsset]}
-                      alt={selectedAsset}
-                      width={24}
-                      height={24}
-                      className="rounded-full"
-                    />
-                    <span>{selectedAsset}</span>
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-400">Select token</span>
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
-                  </div>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48 bg-gray-900 border-gray-800">
-              {availableAssets.map((asset) => {
-                const isAvailable = availableAssetsForChain.includes(asset);
-                return (
-                  <DropdownMenuItem
-                    key={asset}
-                    onClick={() => isAvailable && onAssetChange(asset)}
-                    disabled={!isAvailable}
-                    className={`flex items-center gap-2 ${
-                      isAvailable
-                        ? "cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
-                        : "opacity-40 cursor-not-allowed"
-                    }`}
-                  >
-                    <img
-                      src={LOGO_URLS[asset]}
-                      alt={asset}
-                      width={20}
-                      height={20}
-                      className="rounded-full"
-                    />
-                    <span>{asset}</span>
-                    {!isAvailable && selectedChain && (
-                      <span className="ml-auto text-xs text-gray-500">N/A</span>
-                    )}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          {selectedAssetBalance && (
-            <span className="text-sm text-gray-400">
-              Balance:{" "}
-              {parseFloat(selectedAssetBalance.amount.toString()).toFixed(4)}
-            </span>
+        <div className="flex items-center justify-between">
+          {onOpenTokenSelection ? (
+            <Button
+              variant="ghost"
+              onClick={onOpenTokenSelection}
+              className="h-auto p-0 hover:bg-transparent text-lg font-medium text-white"
+            >
+              {selectedAsset ? (
+                <div className="flex items-center gap-3">
+                  <img
+                    src={LOGO_URLS[selectedAsset]}
+                    alt={selectedAsset}
+                    width={28}
+                    height={28}
+                    className="rounded-full"
+                  />
+                  <span className="text-lg">{selectedAsset}</span>
+                  <ChevronDown className="w-4 h-4 text-gray-400 ml-1" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400">Select chain and token</span>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                </div>
+              )}
+            </Button>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="h-auto p-0 hover:bg-transparent text-lg font-medium text-white"
+                >
+                  {selectedAsset ? (
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={LOGO_URLS[selectedAsset]}
+                        alt={selectedAsset}
+                        width={24}
+                        height={24}
+                        className="rounded-full"
+                      />
+                      <span>{selectedAsset}</span>
+                      <ChevronDown className="w-4 h-4 text-gray-400" />
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-400">Select token</span>
+                      <ChevronDown className="w-4 h-4 text-gray-400" />
+                    </div>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-48 bg-gray-900 border-gray-800">
+                {availableAssets.map((asset) => {
+                  const isAvailable = availableAssetsForChain.includes(asset);
+                  return (
+                    <DropdownMenuItem
+                      key={asset}
+                      onClick={() => isAvailable && onAssetChange(asset)}
+                      disabled={!isAvailable}
+                      className={`flex items-center gap-2 ${
+                        isAvailable
+                          ? "cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
+                          : "opacity-40 cursor-not-allowed"
+                      }`}
+                    >
+                      <img
+                        src={LOGO_URLS[asset]}
+                        alt={asset}
+                        width={20}
+                        height={20}
+                        className="rounded-full"
+                      />
+                      <span>{asset}</span>
+                      {!isAvailable && selectedChain && (
+                        <span className="ml-auto text-xs text-gray-500">
+                          N/A
+                        </span>
+                      )}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
 
-      <div className="flex justify-center -my-1 relative z-10">
-        <div className="bg-gray-800 rounded-lg p-2 border border-gray-700">
-          <ArrowDown className="w-4 h-4 text-gray-400" />
+      <div className="flex justify-center -my-2 relative z-10">
+        <div className="bg-white/10 rounded-lg p-2 border border-white/20 backdrop-blur-sm">
+          <ArrowDown className="w-4 h-4 text-gray-300" />
         </div>
       </div>
 
-      <div className="bg-gray-800/50 rounded-xl p-4 mt-3">
-        <span className="text-xs text-gray-400 uppercase tracking-wide">
+      <div className="bg-white/5 rounded-xl p-5 mt-3 border border-white/10">
+        <span className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-3 block">
           On Chain
         </span>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="w-full h-auto p-0 mt-2 hover:bg-transparent text-lg font-medium text-white justify-start"
-            >
-              {selectedChain ? (
-                <div className="flex items-center gap-2">
-                  <img
-                    src={LOGO_URLS[selectedChain]}
-                    alt={selectedChain}
-                    width={24}
-                    height={24}
-                    className="rounded-full"
-                  />
-                  <span>{selectedChain}</span>
-                  <ChevronDown className="w-4 h-4 text-gray-400 ml-auto" />
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 w-full">
-                  <span className="text-gray-400">Select chain</span>
-                  <ChevronDown className="w-4 h-4 text-gray-400 ml-auto" />
-                </div>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-64 bg-gray-900 border-gray-800">
-            {availableChains.map((chain) => (
-              <DropdownMenuItem
-                key={chain}
-                onClick={() => handleChainChange(chain)}
-                className="flex items-center gap-2 cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
-              >
+        {onOpenChainSelection ? (
+          <Button
+            variant="ghost"
+            onClick={onOpenChainSelection}
+            className="w-full h-auto p-0 hover:bg-transparent text-base font-medium text-white justify-start"
+          >
+            {selectedChain ? (
+              <div className="flex items-center gap-3 w-full">
                 <img
-                  src={LOGO_URLS[chain]}
-                  alt={chain}
-                  width={20}
-                  height={20}
+                  src={LOGO_URLS[selectedChain]}
+                  alt={selectedChain}
+                  width={28}
+                  height={28}
                   className="rounded-full"
                 />
-                <span>{chain}</span>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                <span className="text-lg">{selectedChain}</span>
+                <ChevronDown className="w-4 h-4 text-gray-400 ml-auto" />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 w-full">
+                <span className="text-gray-400">Select chain</span>
+                <ChevronDown className="w-4 h-4 text-gray-400 ml-auto" />
+              </div>
+            )}
+          </Button>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full h-auto p-0 hover:bg-transparent text-lg font-medium text-white justify-start"
+              >
+                {selectedChain ? (
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={LOGO_URLS[selectedChain]}
+                      alt={selectedChain}
+                      width={24}
+                      height={24}
+                      className="rounded-full"
+                    />
+                    <span>{selectedChain}</span>
+                    <ChevronDown className="w-4 h-4 text-gray-400 ml-auto" />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 w-full">
+                    <span className="text-gray-400">Select chain</span>
+                    <ChevronDown className="w-4 h-4 text-gray-400 ml-auto" />
+                  </div>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-64 bg-gray-900 border-gray-800">
+              {availableChains.map((chain) => (
+                <DropdownMenuItem
+                  key={chain}
+                  onClick={() => handleChainChange(chain)}
+                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
+                >
+                  <img
+                    src={LOGO_URLS[chain]}
+                    alt={chain}
+                    width={20}
+                    height={20}
+                    className="rounded-full"
+                  />
+                  <span>{chain}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
-      <div className="bg-gray-800/50 rounded-xl p-4 mt-3">
-        <span className="text-xs text-gray-400 uppercase tracking-wide">
-          Amount
+      <div className="bg-white/5 rounded-xl p-5 mt-3 border border-white/10">
+        <span className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-3 block">
+          Send
         </span>
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-3 mt-2">
           <input
             type="number"
             placeholder="0"
             value={swapAmount}
             onChange={(e) => onAmountChange(e.target.value)}
-            className="w-full bg-transparent text-2xl font-medium focus:outline-none"
+            className="w-full bg-transparent text-3xl font-semibold focus:outline-none text-white placeholder:text-gray-600"
           />
-          {selectedAsset && (
-            <span className="text-gray-400 text-sm">{selectedAsset}</span>
-          )}
         </div>
-        {selectedAssetBalance && (
-          <p className="text-xs text-gray-500 mt-1">
+        {selectedAssetBalance && swapAmount && (
+          <p className="text-sm text-gray-400 mt-2">
             ≈ $
             {(
               parseFloat(swapAmount || "0") *
@@ -227,30 +281,30 @@ export function SwapCard({
       <Button
         onClick={onSwap}
         disabled={!selectedChain || !selectedAsset || !swapAmount || isSending}
-        className="w-full mt-4 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold py-4 rounded-xl transition-all duration-200 h-auto"
+        className="w-full mt-6 bg-linear-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 disabled:from-gray-700 disabled:to-gray-600 disabled:text-gray-500 text-white font-semibold py-4 rounded-xl transition-all duration-200 h-auto shadow-lg hover:shadow-purple-500/30 disabled:shadow-none"
       >
         {isSending
           ? "Processing..."
-          : !selectedAsset
-          ? "Select asset"
-          : !selectedChain
-          ? "Select chain"
+          : !selectedAsset || !selectedChain
+          ? "Select asset and chain"
           : !swapAmount
           ? "Enter amount"
-          : `Swap to ${selectedChain}`}
+          : "Exchange"}
       </Button>
 
       {transactionHash && (
-        <div className="mt-4 p-4 bg-green-900/20 border border-green-800 rounded-xl">
-          <p className="text-sm text-green-400 font-medium">Swap Successful!</p>
+        <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl backdrop-blur-sm">
+          <p className="text-sm text-green-400 font-semibold mb-2">
+            Swap Successful!
+          </p>
           <a
             href={`https://universalx.app/activity/details?id=${transactionHash}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-purple-400 hover:text-purple-300 mt-2 inline-flex items-center gap-1"
+            className="text-sm text-purple-400 hover:text-purple-300 inline-flex items-center gap-1.5 transition-colors"
           >
             View on Explorer
-            <ExternalLink className="w-3 h-3" />
+            <ExternalLink className="w-4 h-4" />
           </a>
         </div>
       )}

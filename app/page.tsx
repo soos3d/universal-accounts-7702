@@ -15,9 +15,11 @@ import {
   type IAssetsResponse,
   UNIVERSAL_ACCOUNT_VERSION,
 } from "@particle-network/universal-account-sdk";
-import { AccountCard } from "@/components/AccountCard";
 import { SwapCard } from "@/components/SwapCard";
-import { BalanceDialog } from "@/components/BalanceDialog";
+import { LandingHero } from "@/components/LandingHero";
+import { WalletSidebar } from "@/components/WalletSidebar";
+import { SelectionPanel } from "@/components/SelectionPanel";
+import { BackgroundDecoration } from "@/components/BackgroundDecoration";
 import { chainIdMap, tokenTypeMap } from "@/lib/utils";
 import { handleEIP7702Authorizations } from "@/lib/eip7702";
 
@@ -46,7 +48,9 @@ export default function Home() {
   const [selectedChain, setSelectedChain] = useState<string>("");
   const [selectedAsset, setSelectedAsset] = useState<string>("");
   const [swapAmount, setSwapAmount] = useState<string>("");
-  const [showBalanceDialog, setShowBalanceDialog] = useState<boolean>(false);
+  const [showSelectionPanel, setShowSelectionPanel] = useState<
+    "token" | "chain" | null
+  >(null);
   const walletCreationAttempted = useRef(false);
 
   // 1. Ensure embedded wallet exists after login
@@ -235,57 +239,59 @@ export default function Home() {
     );
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-800 text-white">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-linear-to-br from-[#0a0a1f] via-[#1a0f3e] to-[#0f0a2e] text-white relative overflow-hidden">
+      <BackgroundDecoration />
+
       {!user ? (
-        <div className="flex flex-col items-center gap-6">
-          <h1 className="text-3xl font-bold from-purple-400 to-purple-600 bg-clip-text text-transparent">
-            Universal Accounts
-          </h1>
-          <p className="text-gray-400 text-center max-w-md">
-            Convert your EOA into a Universal Account with EIP-7702
-          </p>
-          <button
-            onClick={() =>
-              login({ loginMethods: ["email", "google", "twitter"] })
-            }
-            disabled={!ready || authenticated}
-            className="bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200"
-          >
-            {ready ? "Sign in with Privy" : "Loading..."}
-          </button>
-        </div>
-      ) : (
-        <div className="w-full max-w-md space-y-4">
-          <AccountCard
-            userEmail={user.email?.address}
-            smartAccountAddresses={smartAccountAddresses}
-            balance={balance?.totalAmountInUSD || 0}
-            isLoadingBalance={isLoadingBalance}
-            onLogout={logout}
-            onRefreshBalance={fetchBalance}
-            onShowBalanceDialog={() => balance && setShowBalanceDialog(true)}
-          />
-
-          <SwapCard
-            selectedAsset={selectedAsset}
-            selectedChain={selectedChain}
-            swapAmount={swapAmount}
-            isSending={isSending}
-            transactionHash={transactionHash}
-            balance={balance}
-            onAssetChange={setSelectedAsset}
-            onChainChange={setSelectedChain}
-            onAmountChange={setSwapAmount}
-            onSwap={handleSwap}
-          />
-        </div>
-      )}
-
-      {showBalanceDialog && balance && (
-        <BalanceDialog
-          balance={balance}
-          onClose={() => setShowBalanceDialog(false)}
+        <LandingHero
+          onLogin={() =>
+            login({ loginMethods: ["email", "google", "twitter"] })
+          }
+          ready={ready}
+          authenticated={authenticated}
         />
+      ) : (
+        <div className="w-full flex justify-center gap-6 relative z-10 px-4">
+          <WalletSidebar
+            smartAccountAddresses={smartAccountAddresses}
+            balance={balance}
+            isLoadingBalance={isLoadingBalance}
+            onRefreshBalance={fetchBalance}
+            onLogout={logout}
+          />
+
+          {/* Main Content - Exchange Widget */}
+          <div className="w-full max-w-md">
+            <SwapCard
+              selectedAsset={selectedAsset}
+              selectedChain={selectedChain}
+              swapAmount={swapAmount}
+              isSending={isSending}
+              transactionHash={transactionHash}
+              balance={balance}
+              onAssetChange={setSelectedAsset}
+              onChainChange={setSelectedChain}
+              onAmountChange={setSwapAmount}
+              onSwap={handleSwap}
+              onOpenTokenSelection={() => setShowSelectionPanel("token")}
+              onOpenChainSelection={() => setShowSelectionPanel("chain")}
+            />
+          </div>
+
+          {showSelectionPanel && (
+            <SelectionPanel
+              type={showSelectionPanel}
+              onSelect={(value) => {
+                if (showSelectionPanel === "token") {
+                  setSelectedAsset(value);
+                } else {
+                  setSelectedChain(value);
+                }
+              }}
+              onClose={() => setShowSelectionPanel(null)}
+            />
+          )}
+        </div>
       )}
     </div>
   );
