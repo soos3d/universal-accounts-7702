@@ -18,28 +18,6 @@ export const copyToClipboard = async (value?: string) => {
   }
 };
 
-export const getChainName = (chainId: number): string => {
-  const chainNames: Record<number, string> = {
-    1: "Ethereum",
-    10: "Optimism",
-    56: "BNB Chain",
-    137: "Polygon",
-    8453: "Base",
-    42161: "Arbitrum",
-    43114: "Avalanche",
-    59144: "Linea",
-    80094: "Berachain",
-    101: "Solana",
-    146: "Sonic",
-    196: "X Layer",
-    143: "Blast",
-    999: "Zora",
-    5000: "Mantle",
-    9745: "Plume",
-  };
-  return chainNames[chainId] || `Chain ${chainId}`;
-};
-
 export const LOGO_URLS: Record<string, string> = {
   // Chains
   Ethereum:
@@ -104,7 +82,7 @@ export const tokenTypeMap: Record<string, SUPPORTED_TOKEN_TYPE> = {
 export const availableAssets = ["USDC", "USDT", "ETH", "BTC", "SOL", "BNB"];
 export const availableChains = Object.keys(chainIdMap);
 
-export const chainAssetAvailability: Record<string, string[]> = {
+const chainAssetAvailability: Record<string, string[]> = {
   Solana: ["USDC", "USDT", "SOL"],
   Ethereum: ["USDC", "USDT", "ETH", "BTC"],
   Base: ["USDC", "ETH", "BTC"],
