@@ -18,16 +18,16 @@ export function LandingHero({
           </span>
         </div>
         <h1 className="text-6xl font-bold bg-linear-to-r from-purple-400 via-purple-300 to-purple-500 bg-clip-text text-transparent leading-tight">
-          Your EOA.
+          Your Account.
           <br />
           Supercharged.
         </h1>
         <p className="text-gray-300 text-xl max-w-2xl mx-auto leading-relaxed">
-          Upgrade your wallet to a{" "}
+          Upgrade your EOA to a{" "}
           <span className="text-purple-400 font-semibold">
             Universal Account
           </span>{" "}
-          without deploying contracts or transferring assets.
+          without deploying contracts or forcing your users to migrate assets.
         </p>
       </div>
 
@@ -35,7 +35,7 @@ export function LandingHero({
         <div className="bg-white/5 backdrop-blur-sm rounded-xl p-5 border border-white/10 text-center">
           <div className="text-purple-300 font-semibold mb-1">Same Address</div>
           <div className="text-sm text-gray-400">
-            Your EOA IS your Universal Account
+            Your existing EOA IS your Universal Account.
           </div>
         </div>
         <div className="bg-white/5 backdrop-blur-sm rounded-xl p-5 border border-white/10 text-center">
@@ -43,7 +43,7 @@ export function LandingHero({
             Zero Transfers
           </div>
           <div className="text-sm text-gray-400">
-            No asset migration required
+            No asset migration required.
           </div>
         </div>
         <div className="bg-white/5 backdrop-blur-sm rounded-xl p-5 border border-white/10 text-center">
@@ -51,7 +51,7 @@ export function LandingHero({
             Chain Abstraction
           </div>
           <div className="text-sm text-gray-400">
-            Swap across 15+ chains instantly
+            Swap across 15+ chains instantly.
           </div>
         </div>
       </div>
@@ -59,7 +59,7 @@ export function LandingHero({
       <div className="mt-6 p-8 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl w-full max-w-md">
         <div className="flex flex-col items-center gap-6">
           <div className="text-center space-y-2">
-            <p className="text-sm text-gray-400 uppercase tracking-wider">
+            <p className="text-white font-bold text-sm uppercase tracking-wider">
               Experience the Future
             </p>
           </div>

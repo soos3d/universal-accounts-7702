@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# dead code analysis
+/dead-code-analysis.md
+
+# claude
+/claude.md
