@@ -50,12 +50,6 @@ export interface Transaction {
   }>;
 }
 
-export interface TransactionsResponse {
-  hasNextPage: boolean;
-  data: Transaction[];
-  currentPage: number;
-}
-
 interface TransactionListProps {
   transactions: Transaction[];
   isLoading: boolean;

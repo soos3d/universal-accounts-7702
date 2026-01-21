@@ -102,7 +102,7 @@ export const getAvailableAssetsForChain = (chain: string): string[] => {
 };
 
 // Transaction history utilities
-export const chainIdToName: Record<number, string> = {
+const chainIdToName: Record<number, string> = {
   [CHAIN_ID.ETHEREUM_MAINNET]: "Ethereum",
   [CHAIN_ID.OPTIMISM_MAINNET]: "Optimism",
   [CHAIN_ID.ARBITRUM_MAINNET_ONE]: "Arbitrum",
@@ -138,7 +138,7 @@ export const formatTransactionDate = (dateString: string): string => {
   });
 };
 
-export const transactionStatusMap: Record<number, { label: string; color: string }> = {
+const transactionStatusMap: Record<number, { label: string; color: string }> = {
   7: { label: "Completed", color: "text-green-400" },
   1: { label: "Pending", color: "text-yellow-400" },
   2: { label: "Processing", color: "text-blue-400" },
