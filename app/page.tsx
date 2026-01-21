@@ -16,10 +16,12 @@ import {
   UNIVERSAL_ACCOUNT_VERSION,
 } from "@particle-network/universal-account-sdk";
 import { SwapCard } from "@/components/SwapCard";
+import { TransferCard } from "@/components/TransferCard";
 import { LandingHero } from "@/components/LandingHero";
 import { WalletSidebar } from "@/components/WalletSidebar";
 import { SelectionPanel } from "@/components/SelectionPanel";
 import { BackgroundDecoration } from "@/components/BackgroundDecoration";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { chainIdMap, tokenTypeMap } from "@/lib/utils";
 import { handleEIP7702Authorizations } from "@/lib/eip7702";
 
@@ -359,22 +361,57 @@ export default function Home() {
             onTabChange={handleTabChange}
           />
 
-          {/* Main Content - Exchange Widget */}
+          {/* Main Content - Exchange/Withdraw Widget */}
           <div className="w-full max-w-md">
-            <SwapCard
-              selectedAsset={selectedAsset}
-              selectedChain={selectedChain}
-              swapAmount={swapAmount}
-              isSending={isSending}
-              transactionHash={transactionHash}
-              balance={balance}
-              onAssetChange={setSelectedAsset}
-              onChainChange={setSelectedChain}
-              onAmountChange={setSwapAmount}
-              onSwap={handleSwap}
-              onOpenTokenSelection={() => setShowSelectionPanel("token")}
-              onOpenChainSelection={() => setShowSelectionPanel("chain")}
-            />
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-xl h-[600px] flex flex-col">
+              <Tabs defaultValue="exchange" className="flex flex-col flex-1">
+                <TabsList className="grid w-full grid-cols-2 bg-white/5 border border-white/10 p-1 h-auto mb-6">
+                  <TabsTrigger
+                    value="exchange"
+                    className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 text-gray-400 py-2.5 rounded-lg transition-all duration-200"
+                  >
+                    Exchange
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="withdraw"
+                    className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 text-gray-400 py-2.5 rounded-lg transition-all duration-200"
+                  >
+                    Withdraw
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="exchange" className="flex-1 mt-0">
+                  <SwapCard
+                    selectedAsset={selectedAsset}
+                    selectedChain={selectedChain}
+                    swapAmount={swapAmount}
+                    isSending={isSending}
+                    transactionHash={transactionHash}
+                    balance={balance}
+                    onAssetChange={setSelectedAsset}
+                    onChainChange={setSelectedChain}
+                    onAmountChange={setSwapAmount}
+                    onSwap={handleSwap}
+                    onOpenTokenSelection={() => setShowSelectionPanel("token")}
+                    onOpenChainSelection={() => setShowSelectionPanel("chain")}
+                  />
+                </TabsContent>
+
+                <TabsContent value="withdraw" className="flex-1 mt-0">
+                  <TransferCard
+                    universalAccount={universalAccount}
+                    totalBalance={balance?.totalAmountInUSD || 0}
+                    isSending={isSending}
+                    onSendingChange={setIsSending}
+                    onSuccess={() => fetchBalance()}
+                    onRefreshBalance={fetchBalance}
+                    signMessage={signMessage}
+                    signAuthorization={signAuthorization}
+                    walletAddress={wallets?.find((w) => w.walletClientType === "privy")?.address || ""}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
           </div>
 
           {showSelectionPanel && (

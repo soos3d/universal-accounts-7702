@@ -71,11 +71,7 @@ export function SwapCard({
   };
 
   return (
-    <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-xl h-[600px] flex flex-col">
-      <h2 className="text-xl font-semibold mb-6 text-white shrink-0">
-        Exchange
-      </h2>
-
+    <div className="flex flex-col flex-1">
       <div className="bg-white/5 rounded-xl p-5 mb-3 border border-white/10">
         <span className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-3 block">
           Receive
