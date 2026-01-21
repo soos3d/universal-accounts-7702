@@ -51,6 +51,52 @@ export default function Home() {
   const [showSelectionPanel, setShowSelectionPanel] = useState<
     "token" | "chain" | null
   >(null);
+  const [transactions, setTransactions] = useState<
+    Array<{
+      transactionId: string;
+      tag: string;
+      createdAt: string;
+      updatedAt: string;
+      targetToken: {
+        name: string;
+        type: string;
+        image: string;
+        price: number;
+        symbol: string;
+        address: string;
+        assetId: string;
+        chainId: number;
+        decimals: number;
+        realDecimals: number;
+        isPrimaryToken: boolean;
+        isSmartRouterSupported: boolean;
+      };
+      change: {
+        amount: string;
+        amountInUSD: string;
+        from: string;
+        to: string;
+      };
+      detail: {
+        redPacketCount: number;
+      };
+      status: number;
+      fromChains: number[];
+      toChains: number[];
+      exchangeRateUSD: Array<{
+        type: string;
+        exchangeRate: {
+          type: string;
+          price: number;
+        };
+      }>;
+    }>
+  >([]);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+  const [transactionsPage, setTransactionsPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [isLoadingMoreTransactions, setIsLoadingMoreTransactions] =
+    useState(false);
   const walletCreationAttempted = useRef(false);
 
   // 1. Ensure embedded wallet exists after login
@@ -59,7 +105,7 @@ export default function Home() {
       if (!ready || !user) return;
 
       const embeddedWallet = wallets?.find(
-        (w) => w.walletClientType === "privy"
+        (w) => w.walletClientType === "privy",
       );
 
       if (embeddedWallet) {
@@ -111,8 +157,10 @@ export default function Home() {
       if (!universalAccount) return;
       try {
         const opts = await universalAccount.getSmartAccountOptions();
+        const transactions = await universalAccount.getTransactions(1, 20);
+        console.log("transactions", transactions);
         const embeddedWallet = wallets?.find(
-          (w) => w.walletClientType === "privy"
+          (w) => w.walletClientType === "privy",
         );
         const owner = embeddedWallet?.address;
         if (!owner) return;
@@ -147,12 +195,57 @@ export default function Home() {
       if (!universalAccount) return;
       setIsLoadingBalance(true);
       const primaryAssets = await universalAccount.getPrimaryAssets();
-      console.log("Unified Balance:", primaryAssets);
       setBalance(primaryAssets || null);
     } catch (error) {
       console.error("Error fetching balance:", error);
     } finally {
       setIsLoadingBalance(false);
+    }
+  };
+
+  // Fetch transaction history
+  const fetchTransactions = async (
+    page: number = 1,
+    append: boolean = false,
+  ) => {
+    try {
+      if (!universalAccount) return;
+
+      if (append) {
+        setIsLoadingMoreTransactions(true);
+      } else {
+        setIsLoadingTransactions(true);
+      }
+
+      const response = await universalAccount.getTransactions(page, 15);
+
+      if (append) {
+        setTransactions((prev) => [...prev, ...response.data]);
+      } else {
+        setTransactions(response.data);
+      }
+
+      setHasNextPage(response.hasNextPage);
+      setTransactionsPage(response.currentPage);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+    } finally {
+      setIsLoadingTransactions(false);
+      setIsLoadingMoreTransactions(false);
+    }
+  };
+
+  // Handle loading more transactions
+  const handleLoadMoreTransactions = () => {
+    if (hasNextPage && !isLoadingMoreTransactions) {
+      fetchTransactions(transactionsPage + 1, true);
+    }
+  };
+
+  // Handle tab change - fetch transactions when history tab is selected
+  const handleTabChange = (tab: "balance" | "history") => {
+    if (tab === "history" && transactions.length === 0) {
+      fetchTransactions(1);
     }
   };
 
@@ -192,7 +285,7 @@ export default function Home() {
       const authorizations = await handleEIP7702Authorizations(
         transaction.userOps,
         signAuthorization,
-        embeddedWallet.address
+        embeddedWallet.address,
       );
 
       // Sign the transaction root hash
@@ -203,14 +296,14 @@ export default function Home() {
             title: `Convert to ${selectedAsset} on ${selectedChain}`,
           },
           address: embeddedWallet.address,
-        }
+        },
       );
 
       // Send the transaction with authorizations
       const sendResult = await universalAccount.sendTransaction(
         transaction,
         signature,
-        authorizations
+        authorizations,
       );
 
       console.log("Swap transaction sent:", sendResult);
@@ -224,7 +317,7 @@ export default function Home() {
       alert(
         `Swap failed: ${
           error instanceof Error ? error.message : "Unknown error"
-        }`
+        }`,
       );
     } finally {
       setIsSending(false);
@@ -258,6 +351,12 @@ export default function Home() {
             isLoadingBalance={isLoadingBalance}
             onRefreshBalance={fetchBalance}
             onLogout={logout}
+            transactions={transactions}
+            isLoadingTransactions={isLoadingTransactions}
+            hasNextPage={hasNextPage}
+            onLoadMoreTransactions={handleLoadMoreTransactions}
+            isLoadingMoreTransactions={isLoadingMoreTransactions}
+            onTabChange={handleTabChange}
           />
 
           {/* Main Content - Exchange Widget */}

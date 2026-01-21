@@ -100,3 +100,63 @@ const chainAssetAvailability: Record<string, string[]> = {
 export const getAvailableAssetsForChain = (chain: string): string[] => {
   return chainAssetAvailability[chain] || [];
 };
+
+// Transaction history utilities
+export const chainIdToName: Record<number, string> = {
+  [CHAIN_ID.ETHEREUM_MAINNET]: "Ethereum",
+  [CHAIN_ID.OPTIMISM_MAINNET]: "Optimism",
+  [CHAIN_ID.ARBITRUM_MAINNET_ONE]: "Arbitrum",
+  [CHAIN_ID.BASE_MAINNET]: "Base",
+  [CHAIN_ID.BSC_MAINNET]: "BNB Chain",
+  [CHAIN_ID.BERACHAIN_MAINNET]: "Berachain",
+  [CHAIN_ID.SONIC_MAINNET]: "Sonic",
+  [CHAIN_ID.POLYGON_MAINNET]: "Polygon",
+  [CHAIN_ID.XLAYER_MAINNET]: "X Layer",
+  [CHAIN_ID.SOLANA_MAINNET]: "Solana",
+};
+
+export const getChainName = (chainId: number): string => {
+  return chainIdToName[chainId] || `Chain ${chainId}`;
+};
+
+export const formatTransactionDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+};
+
+export const transactionStatusMap: Record<number, { label: string; color: string }> = {
+  7: { label: "Completed", color: "text-green-400" },
+  1: { label: "Pending", color: "text-yellow-400" },
+  2: { label: "Processing", color: "text-blue-400" },
+  3: { label: "Confirming", color: "text-blue-400" },
+  0: { label: "Failed", color: "text-red-400" },
+};
+
+export const getTransactionStatus = (status: number): { label: string; color: string } => {
+  return transactionStatusMap[status] || { label: "Unknown", color: "text-gray-400" };
+};
+
+export const getTransactionTagLabel = (tag: string): string => {
+  const tagMap: Record<string, string> = {
+    convert: "Swap",
+    transfer: "Transfer",
+    bridge: "Bridge",
+    deposit: "Deposit",
+    withdraw: "Withdraw",
+  };
+  return tagMap[tag] || tag.charAt(0).toUpperCase() + tag.slice(1);
+};
