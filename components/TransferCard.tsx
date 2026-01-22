@@ -3,12 +3,14 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowDown, ExternalLink, Info } from "lucide-react";
-import { LOGO_URLS } from "@/lib/utils";
-import { CHAIN_ID, UniversalAccount } from "@particle-network/universal-account-sdk";
+import { ArrowDown, ChevronDown, ExternalLink } from "lucide-react";
+import { LOGO_URLS, chainIdMap, withdrawChainUSDCAddresses } from "@/lib/utils";
+import {
+  UniversalAccount,
+  SUPPORTED_TOKEN_TYPE,
+} from "@particle-network/universal-account-sdk";
 import { handleEIP7702Authorizations } from "@/lib/eip7702";
-
-const USDC_BASE_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+import { Interface, parseUnits } from "ethers";
 
 interface TransferCardProps {
   universalAccount: UniversalAccount | null;
@@ -19,13 +21,15 @@ interface TransferCardProps {
   onRefreshBalance: () => void;
   signMessage: (
     params: { message: string },
-    options: { uiOptions: { title: string }; address: string }
+    options: { uiOptions: { title: string }; address: string },
   ) => Promise<{ signature: string }>;
   signAuthorization: (
     params: { contractAddress: `0x${string}`; chainId: number; nonce: number },
-    options: { address: string }
+    options: { address: string },
   ) => Promise<{ r: string; s: string; v?: bigint; yParity: number }>;
   walletAddress: string;
+  selectedChain: string;
+  onOpenChainSelection: () => void;
 }
 
 export function TransferCard({
@@ -38,6 +42,8 @@ export function TransferCard({
   signMessage,
   signAuthorization,
   walletAddress,
+  selectedChain,
+  onOpenChainSelection,
 }: TransferCardProps) {
   const [receiverAddress, setReceiverAddress] = useState("");
   const [amount, setAmount] = useState("");
@@ -76,39 +82,56 @@ export function TransferCard({
     setTransactionHash(null);
 
     try {
-      const transaction = await universalAccount.createTransferTransaction({
-        token: {
-          chainId: CHAIN_ID.BASE_MAINNET,
-          address: USDC_BASE_ADDRESS,
-        },
-        amount: amount,
-        receiver: receiverAddress,
+      const erc20Interface = new Interface([
+        "function transfer(address to, uint256 amount) external returns (bool)",
+      ]);
+
+      const cleanAmount = amount.trim();
+      const amount6 = parseUnits(cleanAmount, 6);
+
+      const transaction = await universalAccount.createUniversalTransaction({
+        chainId: chainIdMap[selectedChain],
+        expectTokens: [
+          {
+            type: SUPPORTED_TOKEN_TYPE.USDC,
+            amount: cleanAmount,
+          },
+        ],
+        transactions: [
+          {
+            to: withdrawChainUSDCAddresses[selectedChain],
+            data: erc20Interface.encodeFunctionData("transfer", [
+              receiverAddress,
+              amount6,
+            ]),
+          },
+        ],
       });
 
       if (!transaction) {
-        throw new Error("Failed to create transfer transaction");
+        throw new Error("Failed to create universal transaction");
       }
 
       const authorizations = await handleEIP7702Authorizations(
         transaction.userOps,
         signAuthorization,
-        walletAddress
+        walletAddress,
       );
 
       const { signature } = await signMessage(
         { message: transaction.rootHash },
         {
           uiOptions: {
-            title: `Withdraw ${amount} USDC to ${receiverAddress.slice(0, 6)}...${receiverAddress.slice(-4)}`,
+            title: `Withdraw ${amount} USDC on ${selectedChain} to ${receiverAddress.slice(0, 6)}...${receiverAddress.slice(-4)}`,
           },
           address: walletAddress,
-        }
+        },
       );
 
       const sendResult = await universalAccount.sendTransaction(
         transaction,
         signature,
-        authorizations
+        authorizations,
       );
 
       setTransactionHash(sendResult.transactionId || "Transaction submitted");
@@ -120,7 +143,7 @@ export function TransferCard({
     } catch (error) {
       console.error("Transfer failed:", error);
       alert(
-        `Transfer failed: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Transfer failed: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     } finally {
       onSendingChange(false);
@@ -189,52 +212,45 @@ export function TransferCard({
           />
         </div>
         {amount && (
-          <p className="text-sm text-gray-400 mt-2">≈ ${parseFloat(amount).toFixed(2)}</p>
+          <p className="text-sm text-gray-400 mt-2">
+            ≈ ${parseFloat(amount).toFixed(2)}
+          </p>
         )}
         <p className="text-xs text-gray-500 mt-2">
           Available: ${totalBalance.toFixed(2)}
         </p>
       </div>
 
-      <div className="bg-purple-500/10 rounded-xl p-4 mt-4 border border-purple-500/20 flex items-start gap-3">
-        <Info className="w-4 h-4 text-purple-400 mt-0.5 shrink-0" />
-        <div className="flex-1">
-          <p className="text-sm text-purple-300">
-            Recipient will receive{" "}
-            <span className="inline-flex items-center gap-1.5">
-              <img
-                src={LOGO_URLS["USDC"]}
-                alt="USDC"
-                width={16}
-                height={16}
-                className="rounded-full inline"
-              />
-              <span className="font-medium">USDC</span>
-            </span>{" "}
-            on{" "}
-            <span className="inline-flex items-center gap-1.5">
-              <img
-                src={LOGO_URLS["Base"]}
-                alt="Base"
-                width={16}
-                height={16}
-                className="rounded-full inline"
-              />
-              <span className="font-medium">Base</span>
-            </span>
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-auto pt-4">
+      <div className="bg-white/5 rounded-xl p-5 mt-3 border border-white/10">
+        <span className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-3 block">
+          Destination Chain
+        </span>
         <Button
-          onClick={handleTransfer}
-          disabled={isButtonDisabled}
-          className="w-full bg-linear-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 disabled:from-gray-700 disabled:to-gray-600 disabled:text-gray-500 text-white font-semibold py-4 rounded-xl transition-all duration-200 h-auto shadow-lg hover:shadow-purple-500/30 disabled:shadow-none"
+          variant="ghost"
+          onClick={onOpenChainSelection}
+          className="w-full h-auto p-0 hover:bg-transparent text-base font-medium text-white justify-start"
         >
-          {getButtonText()}
+          <div className="flex items-center gap-3 w-full">
+            <img
+              src={LOGO_URLS[selectedChain]}
+              alt={selectedChain}
+              width={28}
+              height={28}
+              className="rounded-full"
+            />
+            <span className="text-lg">{selectedChain}</span>
+            <ChevronDown className="w-4 h-4 text-gray-400 ml-auto" />
+          </div>
         </Button>
       </div>
+
+      <Button
+        onClick={handleTransfer}
+        disabled={isButtonDisabled}
+        className="w-full mt-6 bg-linear-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 disabled:from-gray-700 disabled:to-gray-600 disabled:text-gray-500 text-white font-semibold py-4 rounded-xl transition-all duration-200 h-auto shadow-lg hover:shadow-purple-500/30 disabled:shadow-none"
+      >
+        {getButtonText()}
+      </Button>
 
       {transactionHash && (
         <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl backdrop-blur-sm">

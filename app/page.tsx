@@ -50,8 +50,10 @@ export default function Home() {
   const [selectedChain, setSelectedChain] = useState<string>("");
   const [selectedAsset, setSelectedAsset] = useState<string>("");
   const [swapAmount, setSwapAmount] = useState<string>("");
+  const [withdrawSelectedChain, setWithdrawSelectedChain] =
+    useState<string>("Base");
   const [showSelectionPanel, setShowSelectionPanel] = useState<
-    "token" | "chain" | null
+    "token" | "chain" | "withdrawChain" | null
   >(null);
   const [transactions, setTransactions] = useState<
     Array<{
@@ -146,7 +148,7 @@ export default function Home() {
           process.env.UNIVERSAL_ACCOUNT_VERSION || UNIVERSAL_ACCOUNT_VERSION,
         ownerAddress: owner,
       },
-      tradeConfig: { slippageBps: 100, universalGas: true },
+      tradeConfig: { slippageBps: 100, universalGas: false },
     });
 
     setUniversalAccount(ua);
@@ -407,7 +409,14 @@ export default function Home() {
                     onRefreshBalance={fetchBalance}
                     signMessage={signMessage}
                     signAuthorization={signAuthorization}
-                    walletAddress={wallets?.find((w) => w.walletClientType === "privy")?.address || ""}
+                    walletAddress={
+                      wallets?.find((w) => w.walletClientType === "privy")
+                        ?.address || ""
+                    }
+                    selectedChain={withdrawSelectedChain}
+                    onOpenChainSelection={() =>
+                      setShowSelectionPanel("withdrawChain")
+                    }
                   />
                 </TabsContent>
               </Tabs>
@@ -420,6 +429,8 @@ export default function Home() {
               onSelect={(value) => {
                 if (showSelectionPanel === "token") {
                   setSelectedAsset(value);
+                } else if (showSelectionPanel === "withdrawChain") {
+                  setWithdrawSelectedChain(value);
                 } else {
                   setSelectedChain(value);
                 }

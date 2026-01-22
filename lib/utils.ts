@@ -68,7 +68,17 @@ export const chainIdMap: Record<string, number> = {
   Polygon: CHAIN_ID.POLYGON_MAINNET,
   "X Layer": CHAIN_ID.XLAYER_MAINNET,
   Solana: CHAIN_ID.SOLANA_MAINNET,
+  Avalanche: CHAIN_ID.AVALANCHE_MAINNET,
 };
+
+export const withdrawChainUSDCAddresses: Record<string, string> = {
+  Base: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  Arbitrum: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+  Avalanche: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",
+  "BNB Chain": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+};
+
+export const withdrawChains = Object.keys(withdrawChainUSDCAddresses);
 
 export const tokenTypeMap: Record<string, SUPPORTED_TOKEN_TYPE> = {
   USDC: SUPPORTED_TOKEN_TYPE.USDC,
@@ -113,6 +123,7 @@ const chainIdToName: Record<number, string> = {
   [CHAIN_ID.POLYGON_MAINNET]: "Polygon",
   [CHAIN_ID.XLAYER_MAINNET]: "X Layer",
   [CHAIN_ID.SOLANA_MAINNET]: "Solana",
+  [CHAIN_ID.AVALANCHE_MAINNET]: "Avalanche",
 };
 
 export const getChainName = (chainId: number): string => {

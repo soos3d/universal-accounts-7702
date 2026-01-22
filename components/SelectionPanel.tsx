@@ -1,9 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 import { Button } from "@/components/ui/button";
-import { availableAssets, availableChains, LOGO_URLS } from "@/lib/utils";
+import { availableAssets, availableChains, withdrawChains, LOGO_URLS } from "@/lib/utils";
 
 interface SelectionPanelProps {
-  type: "token" | "chain";
+  type: "token" | "chain" | "withdrawChain";
   onSelect: (value: string) => void;
   onClose: () => void;
 }
@@ -13,7 +13,18 @@ export function SelectionPanel({
   onSelect,
   onClose,
 }: SelectionPanelProps) {
-  const items = type === "token" ? availableAssets : availableChains;
+  const getItems = () => {
+    switch (type) {
+      case "token":
+        return availableAssets;
+      case "withdrawChain":
+        return withdrawChains;
+      default:
+        return availableChains;
+    }
+  };
+
+  const items = getItems();
   const title = type === "token" ? "Select Token" : "Select Chain";
 
   return (
