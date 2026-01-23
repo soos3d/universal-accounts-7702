@@ -22,7 +22,10 @@ import { WalletSidebar } from "@/components/WalletSidebar";
 import { SelectionPanel } from "@/components/SelectionPanel";
 import { BackgroundDecoration } from "@/components/BackgroundDecoration";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { chainIdMap, tokenTypeMap } from "@/lib/utils";
+import { useLiFiTokens } from "@/hooks/useLiFiTokens";
+import { useLiFiBalances } from "@/hooks/useLiFiBalances";
+import type { LiFiToken } from "@/lib/lifi-tokens";
+import { createBuyTransaction } from "@/lib/buy-transaction";
 import { handleEIP7702Authorizations } from "@/lib/eip7702";
 
 export default function Home() {
@@ -33,6 +36,26 @@ export default function Home() {
   const { signMessage } = useSignMessage();
   const { wallets } = useWallets();
   const { signAuthorization } = useSign7702Authorization();
+
+  // LI.FI tokens hook (for token discovery only)
+  const {
+    isLoading: lifiTokensLoading,
+    searchTokens,
+    ensureTokensLoaded,
+  } = useLiFiTokens();
+
+  // Get embedded wallet address for LI.FI balance fetching
+  const embeddedWalletAddress = wallets?.find(
+    (w) => w.walletClientType === "privy"
+  )?.address;
+
+  // LI.FI balances hook (for non-primary token balances)
+  const {
+    balances: lifiBalances,
+    isLoading: isLoadingLifiBalances,
+    addTrackedToken,
+    refetch: refetchLifiBalances,
+  } = useLiFiBalances(embeddedWalletAddress);
 
   const [walletCreated, setWalletCreated] = useState(false);
   const [balance, setBalance] = useState<IAssetsResponse | null>(null);
@@ -47,14 +70,25 @@ export default function Home() {
     evmUaAddress?: string;
     solanaUaAddress?: string;
   } | null>(null);
-  const [selectedChain, setSelectedChain] = useState<string>("");
-  const [selectedAsset, setSelectedAsset] = useState<string>("");
+
+  // Destination selection - two-step: chain first, then token
+  const [selectedDestChainId, setSelectedDestChainId] = useState<number | null>(
+    null,
+  );
+  const [selectedDestToken, setSelectedDestToken] = useState<LiFiToken | null>(
+    null,
+  );
   const [swapAmount, setSwapAmount] = useState<string>("");
+
+  // Withdraw state
   const [withdrawSelectedChain, setWithdrawSelectedChain] =
     useState<string>("Base");
+
+  // Selection panel state
   const [showSelectionPanel, setShowSelectionPanel] = useState<
-    "token" | "chain" | "withdrawChain" | null
+    "token" | "chain" | "withdrawChain" | "lifiChain" | "lifiToken" | null
   >(null);
+
   const [transactions, setTransactions] = useState<
     Array<{
       transactionId: string;
@@ -148,7 +182,7 @@ export default function Home() {
           process.env.UNIVERSAL_ACCOUNT_VERSION || UNIVERSAL_ACCOUNT_VERSION,
         ownerAddress: owner,
       },
-      tradeConfig: { slippageBps: 100, universalGas: false },
+      tradeConfig: { slippageBps: 100, universalGas: true },
     });
 
     setUniversalAccount(ua);
@@ -161,8 +195,6 @@ export default function Home() {
       if (!universalAccount) return;
       try {
         const opts = await universalAccount.getSmartAccountOptions();
-        const transactions = await universalAccount.getTransactions(1, 20);
-        console.log("transactions", transactions);
         const embeddedWallet = wallets?.find(
           (w) => w.walletClientType === "privy",
         );
@@ -200,6 +232,8 @@ export default function Home() {
       setIsLoadingBalance(true);
       const primaryAssets = await universalAccount.getPrimaryAssets();
       setBalance(primaryAssets || null);
+      // Also refresh LI.FI balances for non-primary tokens
+      refetchLifiBalances();
     } catch (error) {
       console.error("Error fetching balance:", error);
     } finally {
@@ -253,18 +287,43 @@ export default function Home() {
     }
   };
 
-  // 5. Handle swap with EIP-7702 authorization
-  // See lib/eip7702.ts for EIP-7702 authorization implementation details
+  // Handle chain selection - reset token when chain changes
+  const handleChainSelect = (chainIdStr: string) => {
+    const chainId = parseInt(chainIdStr, 10);
+    setSelectedDestChainId(chainId);
+    // Reset token selection when chain changes
+    setSelectedDestToken(null);
+  };
+
+  // Handle token selection
+  const handleTokenSelect = (tokenJson: string) => {
+    try {
+      const token = JSON.parse(tokenJson) as LiFiToken;
+      setSelectedDestToken(token);
+    } catch (e) {
+      console.error("Failed to parse selected token:", e);
+    }
+  };
+
+  // 5. Handle swap using createBuyTransaction
   const handleSwap = async () => {
     const embeddedWallet = wallets?.find((w) => w.walletClientType === "privy");
-    if (
-      !universalAccount ||
-      !selectedChain ||
-      !selectedAsset ||
-      !swapAmount ||
-      !embeddedWallet
-    ) {
-      console.error("Missing required data for swap");
+
+    if (!universalAccount || !selectedDestChainId || !selectedDestToken || !embeddedWallet) {
+      return;
+    }
+
+    // Validate swap amount
+    const parsedAmount = parseFloat(swapAmount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    // Validate sufficient balance
+    const totalBalance = balance?.totalAmountInUSD ?? 0;
+    if (parsedAmount > totalBalance) {
+      alert("Insufficient balance");
       return;
     }
 
@@ -272,54 +331,64 @@ export default function Home() {
     setTransactionHash(null);
 
     try {
-      const chainId = chainIdMap[selectedChain];
-      const tokenType = tokenTypeMap[selectedAsset];
-
-      // Create the convert transaction
-      const transaction = await universalAccount.createConvertTransaction({
-        expectToken: { type: tokenType, amount: swapAmount },
-        chainId: chainId,
+      // 1. Create buy transaction using UA's native method
+      const { transaction, description } = await createBuyTransaction({
+        chainId: selectedDestChainId,
+        tokenAddress: selectedDestToken.address,
+        amountInUSD: swapAmount,
+        universalAccount,
       });
 
-      if (!transaction) {
-        throw new Error("Failed to create convert transaction");
-      }
-
-      // Handle EIP-7702 authorizations for the transaction
+      // 2. Handle EIP-7702 authorizations if needed
       const authorizations = await handleEIP7702Authorizations(
         transaction.userOps,
         signAuthorization,
         embeddedWallet.address,
       );
 
-      // Sign the transaction root hash
+      // 3. Sign the root hash
       const { signature } = await signMessage(
         { message: transaction.rootHash },
         {
-          uiOptions: {
-            title: `Convert to ${selectedAsset} on ${selectedChain}`,
-          },
+          uiOptions: { title: `Buy ${selectedDestToken.symbol}` },
           address: embeddedWallet.address,
         },
       );
 
-      // Send the transaction with authorizations
-      const sendResult = await universalAccount.sendTransaction(
+      // 4. Send the transaction
+      const result = await universalAccount.sendTransaction(
         transaction,
         signature,
         authorizations,
       );
 
-      console.log("Swap transaction sent:", sendResult);
-      setTransactionHash(sendResult.transactionId || "Transaction submitted");
+      // 5. Success - update UI
+      setTransactionHash(result.transactionId || "Transaction submitted");
 
-      setSelectedChain("");
-      setSelectedAsset("");
+      // Track the purchased token for balance display
+      addTrackedToken(selectedDestToken);
+
+      // Reset form
+      setSelectedDestChainId(null);
+      setSelectedDestToken(null);
       setSwapAmount("");
+
+      // Refresh balance after successful swap
+      fetchBalance();
     } catch (error) {
-      console.error("Error executing swap:", error);
+      // Check for user rejection - don't show error in this case
+      if (error instanceof Error) {
+        const message = error.message.toLowerCase();
+        if (
+          message.includes("rejected") ||
+          message.includes("denied") ||
+          message.includes("cancelled")
+        ) {
+          return;
+        }
+      }
       alert(
-        `Swap failed: ${
+        `Transaction failed: ${
           error instanceof Error ? error.message : "Unknown error"
         }`,
       );
@@ -361,6 +430,8 @@ export default function Home() {
             onLoadMoreTransactions={handleLoadMoreTransactions}
             isLoadingMoreTransactions={isLoadingMoreTransactions}
             onTabChange={handleTabChange}
+            lifiBalances={lifiBalances}
+            isLoadingLifiBalances={isLoadingLifiBalances}
           />
 
           {/* Main Content - Exchange/Withdraw Widget */}
@@ -384,18 +455,21 @@ export default function Home() {
 
                 <TabsContent value="exchange" className="flex-1 mt-0">
                   <SwapCard
-                    selectedAsset={selectedAsset}
-                    selectedChain={selectedChain}
+                    selectedChainId={selectedDestChainId}
+                    selectedToken={selectedDestToken}
                     swapAmount={swapAmount}
                     isSending={isSending}
                     transactionHash={transactionHash}
                     balance={balance}
-                    onAssetChange={setSelectedAsset}
-                    onChainChange={setSelectedChain}
                     onAmountChange={setSwapAmount}
                     onSwap={handleSwap}
-                    onOpenTokenSelection={() => setShowSelectionPanel("token")}
-                    onOpenChainSelection={() => setShowSelectionPanel("chain")}
+                    onOpenChainSelection={() =>
+                      setShowSelectionPanel("lifiChain")
+                    }
+                    onOpenTokenSelection={() => {
+                      ensureTokensLoaded();
+                      setShowSelectionPanel("lifiToken");
+                    }}
                   />
                 </TabsContent>
 
@@ -427,15 +501,18 @@ export default function Home() {
             <SelectionPanel
               type={showSelectionPanel}
               onSelect={(value) => {
-                if (showSelectionPanel === "token") {
-                  setSelectedAsset(value);
+                if (showSelectionPanel === "lifiChain") {
+                  handleChainSelect(value);
+                } else if (showSelectionPanel === "lifiToken") {
+                  handleTokenSelect(value);
                 } else if (showSelectionPanel === "withdrawChain") {
                   setWithdrawSelectedChain(value);
-                } else {
-                  setSelectedChain(value);
                 }
               }}
               onClose={() => setShowSelectionPanel(null)}
+              lifiTokensLoading={lifiTokensLoading}
+              onSearchTokens={searchTokens}
+              selectedChainId={selectedDestChainId ?? undefined}
             />
           )}
         </div>

@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { CHAIN_ID, SUPPORTED_TOKEN_TYPE } from "@particle-network/universal-account-sdk";
+import { CHAIN_ID } from "@particle-network/universal-account-sdk";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -80,36 +80,8 @@ export const withdrawChainUSDCAddresses: Record<string, string> = {
 
 export const withdrawChains = Object.keys(withdrawChainUSDCAddresses);
 
-export const tokenTypeMap: Record<string, SUPPORTED_TOKEN_TYPE> = {
-  USDC: SUPPORTED_TOKEN_TYPE.USDC,
-  USDT: SUPPORTED_TOKEN_TYPE.USDT,
-  ETH: SUPPORTED_TOKEN_TYPE.ETH,
-  BTC: SUPPORTED_TOKEN_TYPE.BTC,
-  SOL: SUPPORTED_TOKEN_TYPE.SOL,
-  BNB: SUPPORTED_TOKEN_TYPE.BNB,
-};
-
 export const availableAssets = ["USDC", "USDT", "ETH", "BTC", "SOL", "BNB"];
 export const availableChains = Object.keys(chainIdMap);
-
-const chainAssetAvailability: Record<string, string[]> = {
-  Solana: ["USDC", "USDT", "SOL"],
-  Ethereum: ["USDC", "USDT", "ETH", "BTC"],
-  Base: ["USDC", "ETH", "BTC"],
-  "BNB Chain": ["USDC", "USDT", "ETH", "BTC", "BNB"],
-  Mantle: ["USDT"],
-  "X Layer": ["USDC", "USDT"],
-  Sonic: ["USDC"],
-  Berachain: ["USDC"],
-  Avalanche: ["USDC", "USDT", "ETH", "BTC"],
-  Arbitrum: ["USDC", "USDT", "ETH", "BTC"],
-  Optimism: ["USDC", "USDT", "ETH", "BTC"],
-  Polygon: ["USDC", "USDT", "ETH", "BTC"],
-};
-
-export const getAvailableAssetsForChain = (chain: string): string[] => {
-  return chainAssetAvailability[chain] || [];
-};
 
 // Transaction history utilities
 const chainIdToName: Record<number, string> = {

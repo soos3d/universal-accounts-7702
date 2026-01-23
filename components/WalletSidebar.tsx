@@ -1,10 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Copy, LogOut } from "lucide-react";
 import { truncateAddress, copyToClipboard, LOGO_URLS } from "@/lib/utils";
 import { TransactionList, type Transaction } from "@/components/TransactionList";
 import type { IAssetsResponse } from "@particle-network/universal-account-sdk";
+import type { TokenBalance } from "@/lib/lifi-balances";
+import { getLiFiChainById } from "@/lib/lifi";
 
 type TabType = "balance" | "history";
 
@@ -24,6 +26,8 @@ interface WalletSidebarProps {
   onLoadMoreTransactions?: () => void;
   isLoadingMoreTransactions?: boolean;
   onTabChange?: (tab: TabType) => void;
+  lifiBalances?: TokenBalance[];
+  isLoadingLifiBalances?: boolean;
 }
 
 export function WalletSidebar({
@@ -38,8 +42,33 @@ export function WalletSidebar({
   onLoadMoreTransactions,
   isLoadingMoreTransactions,
   onTabChange,
+  lifiBalances = [],
+  isLoadingLifiBalances = false,
 }: WalletSidebarProps) {
   const [activeTab, setActiveTab] = useState<TabType>("balance");
+
+  // Filter LI.FI balances to exclude tokens already in primary assets
+  const filteredLifiBalances = useMemo(() => {
+    if (!lifiBalances.length) return [];
+
+    const primarySymbols = new Set(
+      (balance?.assets || []).map((a) => a.tokenType.toUpperCase())
+    );
+
+    return lifiBalances.filter(
+      (lb) => !primarySymbols.has(lb.symbol.toUpperCase())
+    );
+  }, [lifiBalances, balance?.assets]);
+
+  // Calculate total balance including LI.FI tokens
+  const totalBalance = useMemo(() => {
+    const primaryTotal = balance?.totalAmountInUSD || 0;
+    const lifiTotal = filteredLifiBalances.reduce(
+      (sum, lb) => sum + lb.amountInUSD,
+      0
+    );
+    return primaryTotal + lifiTotal;
+  }, [balance?.totalAmountInUSD, filteredLifiBalances]);
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
@@ -121,9 +150,9 @@ export function WalletSidebar({
           </p>
           <div className="flex items-center justify-between">
             <span className="text-4xl font-bold text-white">
-              {isLoadingBalance
+              {isLoadingBalance || isLoadingLifiBalances
                 ? "..."
-                : `$${(balance?.totalAmountInUSD || 0).toFixed(2)}`}
+                : `$${totalBalance.toFixed(2)}`}
             </span>
             <Button
               onClick={onRefreshBalance}
@@ -173,54 +202,143 @@ export function WalletSidebar({
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
           {activeTab === "balance" ? (
-            balance?.assets &&
-            balance.assets.filter((asset) => asset.amountInUSD > 0).length > 0 ? (
-              <div className="space-y-2">
-                {balance.assets
-                  .filter((asset) => asset.amountInUSD > 0)
-                  .map((asset, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/5 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
-                          <img
-                            src={
-                              LOGO_URLS[asset.tokenType.toUpperCase()] ||
-                              LOGO_URLS.ETH
-                            }
-                            alt={asset.tokenType}
-                            width={36}
-                            height={36}
-                            className="rounded-full"
-                          />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-white text-sm">
-                            {asset.tokenType.toUpperCase()}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {parseFloat(asset.amount.toString()).toFixed(4)}
-                          </p>
-                        </div>
+            <div className="space-y-2">
+              {/* Primary Assets from Particle SDK */}
+              {balance?.assets
+                ?.filter((asset) => asset.amountInUSD > 0)
+                .map((asset) => (
+                  <div
+                    key={`primary-${asset.tokenType}`}
+                    className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/5 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
+                        <img
+                          src={
+                            LOGO_URLS[asset.tokenType.toUpperCase()] ||
+                            LOGO_URLS.ETH
+                          }
+                          alt={asset.tokenType}
+                          width={36}
+                          height={36}
+                          className="rounded-full"
+                        />
                       </div>
-                      <div className="text-right">
+                      <div>
                         <p className="font-semibold text-white text-sm">
-                          ${asset.amountInUSD.toFixed(2)}
+                          {asset.tokenType.toUpperCase()}
                         </p>
                         <p className="text-xs text-gray-400">
                           {parseFloat(asset.amount.toString()).toFixed(4)}
                         </p>
                       </div>
                     </div>
-                  ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-400 text-sm">
-                No assets found
-              </div>
-            )
+                    <div className="text-right">
+                      <p className="font-semibold text-white text-sm">
+                        ${asset.amountInUSD.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {parseFloat(asset.amount.toString()).toFixed(4)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+
+              {/* Separator and Other Tokens from LI.FI */}
+              {filteredLifiBalances.length > 0 && (
+                <>
+                  <div className="flex items-center gap-2 pt-3 pb-1">
+                    <div className="h-px flex-1 bg-white/10" />
+                    <span className="text-xs text-gray-500 uppercase tracking-wider">
+                      Other Tokens
+                    </span>
+                    <div className="h-px flex-1 bg-white/10" />
+                  </div>
+
+                  {filteredLifiBalances.map((token, index) => {
+                    const chain = getLiFiChainById(token.chainId);
+                    const amountFormatted =
+                      parseFloat(token.amount) / Math.pow(10, token.decimals);
+
+                    return (
+                      <div
+                        key={`lifi-${token.chainId}-${token.address}-${index}`}
+                        className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/5 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
+                              {token.logoURI ? (
+                                <img
+                                  src={token.logoURI}
+                                  alt={token.symbol}
+                                  width={36}
+                                  height={36}
+                                  className="rounded-full"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src =
+                                      LOGO_URLS.ETH;
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-xs font-bold text-gray-400">
+                                  {token.symbol.slice(0, 2)}
+                                </span>
+                              )}
+                            </div>
+                            {/* Chain badge */}
+                            {chain && (
+                              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center overflow-hidden">
+                                <img
+                                  src={chain.logo}
+                                  alt={chain.name}
+                                  width={12}
+                                  height={12}
+                                  className="rounded-full"
+                                />
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-white text-sm">
+                              {token.symbol}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {amountFormatted.toFixed(4)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-white text-sm">
+                            ${token.amountInUSD.toFixed(2)}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {chain?.name || `Chain ${token.chainId}`}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
+              {/* Loading state for LI.FI balances */}
+              {isLoadingLifiBalances && filteredLifiBalances.length === 0 && (
+                <div className="text-center py-2 text-gray-500 text-xs">
+                  Loading other tokens...
+                </div>
+              )}
+
+              {/* Empty state */}
+              {!balance?.assets?.filter((a) => a.amountInUSD > 0).length &&
+                !filteredLifiBalances.length &&
+                !isLoadingBalance &&
+                !isLoadingLifiBalances && (
+                  <div className="text-center py-8 text-gray-400 text-sm">
+                    No assets found
+                  </div>
+                )}
+            </div>
           ) : (
             <TransactionList
               transactions={transactions}
