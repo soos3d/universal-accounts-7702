@@ -20,12 +20,15 @@ import { TransferCard } from "@/components/TransferCard";
 import { LandingHero } from "@/components/LandingHero";
 import { WalletSidebar } from "@/components/WalletSidebar";
 import { SelectionPanel } from "@/components/SelectionPanel";
+import { SellTokenDialog } from "@/components/SellTokenDialog";
 import { BackgroundDecoration } from "@/components/BackgroundDecoration";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLiFiTokens } from "@/hooks/useLiFiTokens";
 import { useLiFiBalances } from "@/hooks/useLiFiBalances";
 import type { LiFiToken } from "@/lib/lifi-tokens";
+import type { TokenBalance } from "@/lib/lifi-balances";
 import { createBuyTransaction } from "@/lib/buy-transaction";
+import { createSellTransaction } from "@/lib/sell-transaction";
 import { handleEIP7702Authorizations } from "@/lib/eip7702";
 
 export default function Home() {
@@ -50,11 +53,10 @@ export default function Home() {
     (w) => w.walletClientType === "privy"
   )?.address;
 
-  // LI.FI balances hook (for non-primary token balances)
+  // Token balances hook (fetches ALL ERC-20 tokens via Moralis)
   const {
     balances: lifiBalances,
     isLoading: isLoadingLifiBalances,
-    addTrackedToken,
     refetch: refetchLifiBalances,
   } = useLiFiBalances(embeddedWalletAddress);
 
@@ -89,6 +91,11 @@ export default function Home() {
   const [showSelectionPanel, setShowSelectionPanel] = useState<
     "token" | "chain" | "withdrawChain" | "lifiChain" | "lifiToken" | "allTokens" | null
   >(null);
+
+  // Sell token state
+  const [selectedSellToken, setSelectedSellToken] = useState<TokenBalance | null>(null);
+  const [isSelling, setIsSelling] = useState(false);
+  const [sellTransactionHash, setSellTransactionHash] = useState<string | null>(null);
 
   const [transactions, setTransactions] = useState<
     Array<{
@@ -360,9 +367,6 @@ export default function Home() {
       // 5. Success - update UI
       setTransactionHash(result.transactionId || "Transaction submitted");
 
-      // Track the purchased token for balance display
-      addTrackedToken(selectedDestToken);
-
       // Reset form
       setSelectedDestChainId(null);
       setSelectedDestToken(null);
@@ -390,6 +394,82 @@ export default function Home() {
     } finally {
       setIsSending(false);
     }
+  };
+
+  // Handle sell transaction for non-primary tokens
+  const handleSell = async (token: TokenBalance, amount: string) => {
+    const embeddedWallet = wallets?.find((w) => w.walletClientType === "privy");
+
+    if (!universalAccount || !embeddedWallet) {
+      return;
+    }
+
+    setIsSelling(true);
+    setSellTransactionHash(null);
+
+    try {
+      // 1. Create sell transaction using UA's native method
+      const { transaction } = await createSellTransaction({
+        chainId: token.chainId,
+        tokenAddress: token.address,
+        amount,
+        universalAccount,
+      });
+
+      // 2. Handle EIP-7702 authorizations if needed
+      const authorizations = await handleEIP7702Authorizations(
+        transaction.userOps,
+        signAuthorization,
+        embeddedWallet.address,
+      );
+
+      // 3. Sign the root hash
+      const { signature } = await signMessage(
+        { message: transaction.rootHash },
+        {
+          uiOptions: { title: `Sell ${token.symbol}` },
+          address: embeddedWallet.address,
+        },
+      );
+
+      // 4. Send the transaction
+      const result = await universalAccount.sendTransaction(
+        transaction,
+        signature,
+        authorizations,
+      );
+
+      // 5. Success - update UI
+      setSellTransactionHash(result.transactionId || "Transaction submitted");
+
+      // Refresh balance after successful sell
+      fetchBalance();
+    } catch (error) {
+      // Check for user rejection - don't show error in this case
+      if (error instanceof Error) {
+        const message = error.message.toLowerCase();
+        if (
+          message.includes("rejected") ||
+          message.includes("denied") ||
+          message.includes("cancelled")
+        ) {
+          return;
+        }
+      }
+      alert(
+        `Sell failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      );
+    } finally {
+      setIsSelling(false);
+    }
+  };
+
+  // Handle closing sell dialog
+  const handleCloseSellDialog = () => {
+    setSelectedSellToken(null);
+    setSellTransactionHash(null);
   };
 
   if (!ready)
@@ -427,6 +507,7 @@ export default function Home() {
             onTabChange={handleTabChange}
             lifiBalances={lifiBalances}
             isLoadingLifiBalances={isLoadingLifiBalances}
+            onTokenClick={setSelectedSellToken}
           />
 
           {/* Main Content - Exchange/Withdraw Widget */}
@@ -505,6 +586,15 @@ export default function Home() {
               selectedChainId={selectedDestChainId ?? undefined}
             />
           )}
+
+          {/* Sell Token Dialog */}
+          <SellTokenDialog
+            token={selectedSellToken}
+            onClose={handleCloseSellDialog}
+            onSell={handleSell}
+            isSelling={isSelling}
+            transactionHash={sellTransactionHash}
+          />
         </div>
       )}
     </div>

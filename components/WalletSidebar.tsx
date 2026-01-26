@@ -28,6 +28,7 @@ interface WalletSidebarProps {
   onTabChange?: (tab: TabType) => void;
   lifiBalances?: TokenBalance[];
   isLoadingLifiBalances?: boolean;
+  onTokenClick?: (token: TokenBalance) => void;
 }
 
 export function WalletSidebar({
@@ -44,10 +45,11 @@ export function WalletSidebar({
   onTabChange,
   lifiBalances = [],
   isLoadingLifiBalances = false,
+  onTokenClick,
 }: WalletSidebarProps) {
   const [activeTab, setActiveTab] = useState<TabType>("balance");
 
-  // Filter LI.FI balances to exclude tokens already in primary assets
+  // Filter LI.FI balances to exclude tokens already in primary assets and dust amounts
   const filteredLifiBalances = useMemo(() => {
     if (!lifiBalances.length) return [];
 
@@ -55,9 +57,22 @@ export function WalletSidebar({
       (balance?.assets || []).map((a) => a.tokenType.toUpperCase())
     );
 
-    return lifiBalances.filter(
-      (lb) => !primarySymbols.has(lb.symbol.toUpperCase())
-    );
+    // Minimum threshold: $0.01 USD or 0.0001 tokens (whichever is more permissive)
+    const MIN_USD_VALUE = 0.01;
+    const MIN_TOKEN_AMOUNT = 0.0001;
+
+    return lifiBalances.filter((lb) => {
+      // Exclude tokens already in primary assets
+      if (primarySymbols.has(lb.symbol.toUpperCase())) return false;
+
+      // Exclude dust amounts
+      const formattedAmount = parseFloat(lb.amount) / Math.pow(10, lb.decimals);
+      if (lb.amountInUSD < MIN_USD_VALUE && formattedAmount < MIN_TOKEN_AMOUNT) {
+        return false;
+      }
+
+      return true;
+    });
   }, [lifiBalances, balance?.assets]);
 
   // Calculate total balance including LI.FI tokens
@@ -261,9 +276,10 @@ export function WalletSidebar({
                       parseFloat(token.amount) / Math.pow(10, token.decimals);
 
                     return (
-                      <div
+                      <button
                         key={`lifi-${token.chainId}-${token.address}-${index}`}
-                        className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/5 transition-colors"
+                        onClick={() => onTokenClick?.(token)}
+                        className="w-full flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
                       >
                         <div className="flex items-center gap-3">
                           <div className="relative">
@@ -309,14 +325,14 @@ export function WalletSidebar({
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-white text-sm">
+                          <p className="font-semibold text-white text-sm group-hover:text-purple-300 transition-colors">
                             ${token.amountInUSD.toFixed(2)}
                           </p>
-                          <p className="text-xs text-gray-400">
-                            {chain?.name || `Chain ${token.chainId}`}
+                          <p className="text-xs text-gray-400 group-hover:text-purple-400 transition-colors">
+                            Tap to sell
                           </p>
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </>
