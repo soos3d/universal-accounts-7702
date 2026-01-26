@@ -13,7 +13,7 @@ export const LIFI_CHAINS = [
 
 export const LIFI_CHAIN_IDS = LIFI_CHAINS.map((c) => c.id);
 
-export type LiFiChain = (typeof LIFI_CHAINS)[number];
+type LiFiChain = (typeof LIFI_CHAINS)[number];
 
 export function getLiFiChainById(chainId: number): LiFiChain | undefined {
   return LIFI_CHAINS.find((c) => c.id === chainId);

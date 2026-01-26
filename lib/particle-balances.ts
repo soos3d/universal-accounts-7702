@@ -335,9 +335,3 @@ export function clearParticleBalanceCache(): void {
   particleBalanceCache = null;
 }
 
-/**
- * Get supported chain IDs
- */
-export function getParticleSupportedChains(): number[] {
-  return [...SUPPORTED_CHAIN_IDS];
-}

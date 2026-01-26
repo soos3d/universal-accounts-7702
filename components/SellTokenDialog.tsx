@@ -79,9 +79,9 @@ export function SellTokenDialog({
         />
 
         {/* Dialog */}
-        <div className="relative w-full max-w-sm bg-[#1a1a2e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="relative w-full max-w-sm bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
+          <div className="flex items-center justify-between p-5 pb-0">
             <h2 className="text-lg font-semibold text-white">Sell Complete</h2>
             <Button
               onClick={handleClose}
@@ -94,7 +94,7 @@ export function SellTokenDialog({
           </div>
 
           {/* Content */}
-          <div className="p-6 text-center space-y-4">
+          <div className="p-5 text-center space-y-4">
             <div className="w-16 h-16 mx-auto rounded-full bg-green-500/20 flex items-center justify-center">
               <Check className="w-8 h-8 text-green-400" />
             </div>
@@ -118,10 +118,10 @@ export function SellTokenDialog({
           </div>
 
           {/* Footer */}
-          <div className="p-4 border-t border-white/10">
+          <div className="p-5 pt-2">
             <Button
               onClick={handleClose}
-              className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium transition-colors"
+              className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium transition-colors shadow-lg shadow-purple-500/30"
             >
               Close
             </Button>
@@ -140,9 +140,9 @@ export function SellTokenDialog({
       />
 
       {/* Dialog */}
-      <div className="relative w-full max-w-sm bg-[#1a1a2e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-sm bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
+        <div className="flex items-center justify-between p-5 pb-4">
           <h2 className="text-lg font-semibold text-white">
             Sell {token.symbol}
           </h2>
@@ -158,82 +158,82 @@ export function SellTokenDialog({
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-4">
-          {/* Token Info */}
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
-                {token.logoURI ? (
-                  <img
-                    src={token.logoURI}
-                    alt={token.symbol}
-                    width={48}
-                    height={48}
-                    className="rounded-full"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = LOGO_URLS.ETH;
-                    }}
-                  />
-                ) : (
-                  <span className="text-sm font-bold text-gray-400">
-                    {token.symbol.slice(0, 2)}
-                  </span>
-                )}
-              </div>
-              {/* Chain badge */}
-              {chain && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center overflow-hidden">
-                  <img
-                    src={chain.logo}
-                    alt={chain.name}
-                    width={16}
-                    height={16}
-                    className="rounded-full"
-                  />
-                </div>
-              )}
-            </div>
-            <div>
-              <p className="font-semibold text-white">{token.name}</p>
-              <p className="text-sm text-gray-400">
-                on {chain?.name || `Chain ${token.chainId}`}
-              </p>
-            </div>
-          </div>
-
-          {/* Balance Display */}
-          <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-            <p className="text-xs text-gray-400 mb-1">Your Balance</p>
-            <p className="text-white font-medium">
-              {formattedBalance.toFixed(4)} {token.symbol}
-              <span className="text-gray-400 ml-2">
-                (${token.amountInUSD.toFixed(2)})
-              </span>
+        <div className="px-5 pb-5 space-y-4">
+          {/* Token Sell Section - styled like "YOU RECEIVE" */}
+          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+            <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">
+              You Sell
             </p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
+                    {token.logoURI ? (
+                      <img
+                        src={token.logoURI}
+                        alt={token.symbol}
+                        width={40}
+                        height={40}
+                        className="rounded-full"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = LOGO_URLS.ETH;
+                        }}
+                      />
+                    ) : (
+                      <span className="text-sm font-bold text-gray-400">
+                        {token.symbol.slice(0, 2)}
+                      </span>
+                    )}
+                  </div>
+                  {/* Chain badge */}
+                  {chain && (
+                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={chain.logo}
+                        alt={chain.name}
+                        width={12}
+                        height={12}
+                        className="rounded-full"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="font-medium text-white">{token.symbol}</p>
+                  <p className="text-xs text-gray-400">
+                    {chain?.name || `Chain ${token.chainId}`}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-400">Balance</p>
+                <p className="text-white font-medium">
+                  {formattedBalance.toFixed(4)}
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Amount Input */}
-          <div>
-            <label className="block text-sm text-gray-400 mb-2">
-              Amount to Sell
-            </label>
-            <div className="relative">
+          {/* Amount Input Section - styled like "YOU SPEND (USD)" */}
+          <div className="bg-white/5 rounded-xl p-4 border border-purple-500/30">
+            <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">
+              Amount
+            </p>
+            <div className="flex items-center justify-between gap-4">
               <input
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.0"
+                placeholder="0"
                 disabled={isSelling}
-                className={`w-full bg-white/5 border rounded-xl px-4 py-3 pr-16 text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-colors disabled:opacity-50 ${
-                  exceedsBalance
-                    ? "border-red-500/50 focus:ring-red-500/50"
-                    : "border-white/10 focus:ring-purple-500/50"
+                className={`flex-1 bg-transparent text-3xl font-light text-white placeholder-gray-600 focus:outline-none disabled:opacity-50 w-full min-w-0 ${
+                  exceedsBalance ? "text-red-400" : ""
                 }`}
               />
               <button
                 onClick={handleMax}
                 disabled={isSelling}
-                className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 text-xs font-medium text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 rounded transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 text-sm font-medium text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg transition-colors disabled:opacity-50 shrink-0"
               >
                 MAX
               </button>
@@ -241,25 +241,30 @@ export function SellTokenDialog({
             <div className="flex justify-between mt-2">
               <p className="text-sm text-gray-400">
                 {inputAmount > 0
-                  ? `≈ $${inputUSDValue.toFixed(2)} Delivered as a primary asset`
-                  : "≈ $0.00"}
+                  ? `≈ $${inputUSDValue.toFixed(2)}`
+                  : `≈ $0.00`}
               </p>
               {exceedsBalance && (
                 <p className="text-sm text-red-400">Exceeds balance</p>
               )}
             </div>
           </div>
+
+          {/* Info text */}
+          <p className="text-xs text-gray-500 text-center">
+            Proceeds delivered as USDC to your wallet
+          </p>
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-white/10">
+        <div className="px-5 pb-5">
           <Button
             onClick={handleSell}
             disabled={!hasValidAmount || isSelling}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/30 disabled:shadow-none"
           >
             {isSelling ? (
-              <span className="flex items-center gap-2">
+              <span className="flex items-center justify-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Selling...
               </span>
@@ -268,7 +273,7 @@ export function SellTokenDialog({
             ) : exceedsBalance ? (
               "Insufficient balance"
             ) : (
-              `Sell ${token?.symbol}`
+              `Sell ${token.symbol}`
             )}
           </Button>
         </div>
