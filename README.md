@@ -17,8 +17,7 @@ A developer demo showcasing **EIP-7702 mode** with [Particle Network's Universal
 ### 1. Clone and Install
 
 ```bash
-git clone <repo-url>
-cd universal-accounts-7702
+git clone https://github.com/soos3d/universal-accounts-7702
 yarn install
 ```
 
