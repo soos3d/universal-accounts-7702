@@ -3,6 +3,7 @@ import {
   fetchLiFiTokens,
   searchTokens as searchTokensUtil,
   getTopTokensForChain,
+  getAllTokens,
   type LiFiToken,
   type TokensByChain,
 } from "@/lib/lifi-tokens";
@@ -13,6 +14,7 @@ interface UseLiFiTokensReturn {
   error: Error | null;
   getTokensForChain: (chainId: number) => LiFiToken[];
   searchTokens: (query: string, chainId?: number) => LiFiToken[];
+  getAllTokensSorted: () => LiFiToken[];
   refetch: () => Promise<void>;
   ensureTokensLoaded: () => Promise<void>;
 }
@@ -78,6 +80,10 @@ export function useLiFiTokens(): UseLiFiTokensReturn {
     [tokens]
   );
 
+  const getAllTokensSorted = useCallback((): LiFiToken[] => {
+    return getAllTokens(tokens, 200);
+  }, [tokens]);
+
   return useMemo(
     () => ({
       tokens,
@@ -85,9 +91,10 @@ export function useLiFiTokens(): UseLiFiTokensReturn {
       error,
       getTokensForChain,
       searchTokens,
+      getAllTokensSorted,
       refetch: fetchTokens,
       ensureTokensLoaded,
     }),
-    [tokens, isLoading, error, getTokensForChain, searchTokens, fetchTokens, ensureTokensLoaded]
+    [tokens, isLoading, error, getTokensForChain, searchTokens, getAllTokensSorted, fetchTokens, ensureTokensLoaded]
   );
 }

@@ -117,11 +117,11 @@ export function getTopTokensForChain(
 }
 
 /**
- * Get all tokens across all chains, flattened and sorted
+ * Get all tokens across all chains, flattened and sorted by priority then price
  */
 export function getAllTokens(
   tokens: TokensByChain,
-  limit: number = 100
+  limit: number = 200
 ): LiFiToken[] {
   const allTokens: LiFiToken[] = [];
 
@@ -130,8 +130,16 @@ export function getAllTokens(
     allTokens.push(...chainTokens);
   }
 
-  // Sort by priceUSD descending
+  // Sort by priority first, then by priceUSD for non-priority tokens
   const sorted = allTokens.sort((a, b) => {
+    const priorityA = getTokenPriority(a);
+    const priorityB = getTokenPriority(b);
+
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB;
+    }
+
+    // For same priority, sort by price
     const priceA = parseFloat(a.priceUSD || "0");
     const priceB = parseFloat(b.priceUSD || "0");
     return priceB - priceA;

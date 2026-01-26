@@ -11,7 +11,6 @@ import { getLiFiChainById } from "@/lib/lifi";
 const PLACEHOLDER_TOKEN_LOGO = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png";
 
 interface SwapCardProps {
-  selectedChainId: number | null;
   selectedToken: LiFiToken | null;
   swapAmount: string;
   isSending: boolean;
@@ -19,12 +18,10 @@ interface SwapCardProps {
   balance: IAssetsResponse | null;
   onAmountChange: (amount: string) => void;
   onSwap: () => void;
-  onOpenChainSelection: () => void;
   onOpenTokenSelection: () => void;
 }
 
 export function SwapCard({
-  selectedChainId,
   selectedToken,
   swapAmount,
   isSending,
@@ -32,10 +29,10 @@ export function SwapCard({
   balance,
   onAmountChange,
   onSwap,
-  onOpenChainSelection,
   onOpenTokenSelection,
 }: SwapCardProps) {
-  const selectedChain = selectedChainId ? getLiFiChainById(selectedChainId) : null;
+  // Get chain from selected token
+  const selectedChain = selectedToken ? getLiFiChainById(selectedToken.chainId) : null;
 
   // Get total balance from Universal Account
   const totalBalance = balance?.totalAmountInUSD ?? 0;
@@ -48,42 +45,6 @@ export function SwapCard({
 
   return (
     <div className="flex flex-col flex-1">
-      {/* Destination Chain Selection */}
-      <div className="bg-white/5 rounded-xl p-5 mb-3 border border-white/10">
-        <span className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-3 block">
-          Receive on Chain
-        </span>
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            onClick={onOpenChainSelection}
-            className="h-auto p-0 hover:bg-transparent text-lg font-medium text-white"
-          >
-            {selectedChain ? (
-              <div className="flex items-center gap-3">
-                <img
-                  src={selectedChain.logo}
-                  alt={selectedChain.name}
-                  width={28}
-                  height={28}
-                  className="rounded-full"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = PLACEHOLDER_TOKEN_LOGO;
-                  }}
-                />
-                <span className="text-lg">{selectedChain.name}</span>
-                <ChevronDown className="w-4 h-4 text-gray-400 ml-1" />
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400">Select chain</span>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              </div>
-            )}
-          </Button>
-        </div>
-      </div>
-
       {/* Destination Token Selection */}
       <div className="bg-white/5 rounded-xl p-5 mb-3 border border-white/10">
         <span className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-3 block">
@@ -94,29 +55,46 @@ export function SwapCard({
           <Button
             variant="ghost"
             onClick={onOpenTokenSelection}
-            disabled={!selectedChainId}
-            className="h-auto p-0 hover:bg-transparent text-lg font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-auto p-0 hover:bg-transparent text-lg font-medium text-white"
           >
             {selectedToken ? (
               <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2 border border-white/10">
-                <img
-                  src={selectedToken.logoURI || PLACEHOLDER_TOKEN_LOGO}
-                  alt={selectedToken.symbol}
-                  width={24}
-                  height={24}
-                  className="rounded-full"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = PLACEHOLDER_TOKEN_LOGO;
-                  }}
-                />
-                <span className="text-base">{selectedToken.symbol}</span>
+                {/* Token logo with chain badge */}
+                <div className="relative">
+                  <img
+                    src={selectedToken.logoURI || PLACEHOLDER_TOKEN_LOGO}
+                    alt={selectedToken.symbol}
+                    width={24}
+                    height={24}
+                    className="rounded-full"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = PLACEHOLDER_TOKEN_LOGO;
+                    }}
+                  />
+                  {/* Chain badge */}
+                  {selectedChain && (
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={selectedChain.logo}
+                        alt={selectedChain.name}
+                        width={10}
+                        height={10}
+                        className="rounded-full"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="text-base">{selectedToken.symbol}</span>
+                  {selectedChain && (
+                    <span className="text-xs text-gray-500">{selectedChain.name}</span>
+                  )}
+                </div>
                 <ChevronDown className="w-4 h-4 text-gray-400" />
               </div>
             ) : (
               <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2 border border-white/10">
-                <span className="text-gray-400">
-                  {selectedChainId ? "Select token" : "Select chain first"}
-                </span>
+                <span className="text-gray-400">Select token</span>
                 <ChevronDown className="w-4 h-4 text-gray-400" />
               </div>
             )}
@@ -167,7 +145,6 @@ export function SwapCard({
       <Button
         onClick={onSwap}
         disabled={
-          !selectedChainId ||
           !selectedToken ||
           !swapAmount ||
           parseFloat(swapAmount) <= 0 ||
@@ -178,10 +155,8 @@ export function SwapCard({
       >
         {isSending
           ? "Processing..."
-          : !selectedChainId
-          ? "Select destination chain"
           : !selectedToken
-          ? "Select destination token"
+          ? "Select token"
           : !swapAmount || parseFloat(swapAmount) <= 0
           ? "Enter amount"
           : insufficientBalance

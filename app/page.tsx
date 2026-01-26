@@ -41,6 +41,7 @@ export default function Home() {
   const {
     isLoading: lifiTokensLoading,
     searchTokens,
+    getAllTokensSorted,
     ensureTokensLoaded,
   } = useLiFiTokens();
 
@@ -86,7 +87,7 @@ export default function Home() {
 
   // Selection panel state
   const [showSelectionPanel, setShowSelectionPanel] = useState<
-    "token" | "chain" | "withdrawChain" | "lifiChain" | "lifiToken" | null
+    "token" | "chain" | "withdrawChain" | "lifiChain" | "lifiToken" | "allTokens" | null
   >(null);
 
   const [transactions, setTransactions] = useState<
@@ -287,19 +288,13 @@ export default function Home() {
     }
   };
 
-  // Handle chain selection - reset token when chain changes
-  const handleChainSelect = (chainIdStr: string) => {
-    const chainId = parseInt(chainIdStr, 10);
-    setSelectedDestChainId(chainId);
-    // Reset token selection when chain changes
-    setSelectedDestToken(null);
-  };
-
-  // Handle token selection
+  // Handle token selection - also sets chainId from token
   const handleTokenSelect = (tokenJson: string) => {
     try {
       const token = JSON.parse(tokenJson) as LiFiToken;
       setSelectedDestToken(token);
+      // Set chainId from the selected token
+      setSelectedDestChainId(token.chainId);
     } catch (e) {
       console.error("Failed to parse selected token:", e);
     }
@@ -455,7 +450,6 @@ export default function Home() {
 
                 <TabsContent value="exchange" className="flex-1 mt-0">
                   <SwapCard
-                    selectedChainId={selectedDestChainId}
                     selectedToken={selectedDestToken}
                     swapAmount={swapAmount}
                     isSending={isSending}
@@ -463,12 +457,9 @@ export default function Home() {
                     balance={balance}
                     onAmountChange={setSwapAmount}
                     onSwap={handleSwap}
-                    onOpenChainSelection={() =>
-                      setShowSelectionPanel("lifiChain")
-                    }
                     onOpenTokenSelection={() => {
                       ensureTokensLoaded();
-                      setShowSelectionPanel("lifiToken");
+                      setShowSelectionPanel("allTokens");
                     }}
                   />
                 </TabsContent>
@@ -501,9 +492,7 @@ export default function Home() {
             <SelectionPanel
               type={showSelectionPanel}
               onSelect={(value) => {
-                if (showSelectionPanel === "lifiChain") {
-                  handleChainSelect(value);
-                } else if (showSelectionPanel === "lifiToken") {
+                if (showSelectionPanel === "allTokens" || showSelectionPanel === "lifiToken") {
                   handleTokenSelect(value);
                 } else if (showSelectionPanel === "withdrawChain") {
                   setWithdrawSelectedChain(value);
@@ -512,6 +501,7 @@ export default function Home() {
               onClose={() => setShowSelectionPanel(null)}
               lifiTokensLoading={lifiTokensLoading}
               onSearchTokens={searchTokens}
+              onGetAllTokens={getAllTokensSorted}
               selectedChainId={selectedDestChainId ?? undefined}
             />
           )}

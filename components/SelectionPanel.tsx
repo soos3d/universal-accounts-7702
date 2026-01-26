@@ -7,12 +7,13 @@ import type { LiFiToken } from "@/lib/lifi-tokens";
 import { Search } from "lucide-react";
 
 interface SelectionPanelProps {
-  type: "token" | "chain" | "withdrawChain" | "lifiChain" | "lifiToken";
+  type: "token" | "chain" | "withdrawChain" | "lifiChain" | "lifiToken" | "allTokens";
   onSelect: (value: string) => void;
   onClose: () => void;
-  // LI.FI token props (for lifiToken type)
+  // LI.FI token props (for lifiToken and allTokens types)
   lifiTokensLoading?: boolean;
   onSearchTokens?: (query: string, chainId?: number) => LiFiToken[];
+  onGetAllTokens?: () => LiFiToken[];
   selectedChainId?: number; // Required for lifiToken to filter tokens
 }
 
@@ -24,6 +25,7 @@ export function SelectionPanel({
   onClose,
   lifiTokensLoading,
   onSearchTokens,
+  onGetAllTokens,
   selectedChainId,
 }: SelectionPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,6 +50,23 @@ export function SelectionPanel({
     return onSearchTokens(searchQuery, selectedChainId);
   }, [type, onSearchTokens, searchQuery, selectedChainId]);
 
+  // Get all tokens across all chains (for allTokens type)
+  const filteredAllTokens = useMemo(() => {
+    if (type !== "allTokens") return [];
+
+    // If searching, use searchTokens without chainId to search all chains
+    if (searchQuery && onSearchTokens) {
+      return onSearchTokens(searchQuery);
+    }
+
+    // Otherwise, return all tokens sorted by priority
+    if (onGetAllTokens) {
+      return onGetAllTokens();
+    }
+
+    return [];
+  }, [type, onSearchTokens, onGetAllTokens, searchQuery]);
+
   const items = ["token", "chain", "withdrawChain"].includes(type) ? getLegacyItems() : [];
 
   const getTitle = () => {
@@ -57,6 +76,8 @@ export function SelectionPanel({
       case "lifiChain":
         return "Select Chain";
       case "lifiToken":
+        return "Select Token";
+      case "allTokens":
         return "Select Token";
       case "withdrawChain":
         return "Select Chain";
@@ -93,7 +114,7 @@ export function SelectionPanel({
         </div>
 
         {/* Search Input for LI.FI tokens */}
-        {type === "lifiToken" && (
+        {(type === "lifiToken" || type === "allTokens") && (
           <div className="mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -179,6 +200,74 @@ export function SelectionPanel({
                     </div>
                   </button>
                 ))
+              )}
+            </div>
+          ) : type === "allTokens" ? (
+            // All tokens across all chains with chain badge
+            <div className="space-y-1">
+              {lifiTokensLoading ? (
+                // Loading skeleton
+                <div className="space-y-2">
+                  {[...Array(8)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 p-3 rounded-lg animate-pulse"
+                    >
+                      <div className="w-8 h-8 bg-white/10 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-white/10 rounded w-20" />
+                        <div className="h-3 bg-white/5 rounded w-32" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : filteredAllTokens.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  {searchQuery ? "No tokens found" : "No tokens available"}
+                </div>
+              ) : (
+                filteredAllTokens.slice(0, 50).map((token) => {
+                  const chain = getLiFiChainById(token.chainId);
+                  return (
+                    <button
+                      key={`${token.chainId}-${token.address}`}
+                      onClick={() => handleLiFiTokenSelect(token)}
+                      className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-colors text-left"
+                    >
+                      {/* Token logo with chain badge */}
+                      <div className="relative">
+                        <img
+                          src={token.logoURI || PLACEHOLDER_TOKEN_LOGO}
+                          alt={token.symbol}
+                          width={32}
+                          height={32}
+                          className="rounded-full"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = PLACEHOLDER_TOKEN_LOGO;
+                          }}
+                        />
+                        {/* Chain badge */}
+                        {chain && (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center overflow-hidden">
+                            <img
+                              src={chain.logo}
+                              alt={chain.name}
+                              width={12}
+                              height={12}
+                              className="rounded-full"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-white font-medium">{token.symbol}</span>
+                        <p className="text-xs text-gray-500 truncate">
+                          {chain ? chain.name : token.name}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })
               )}
             </div>
           ) : (
