@@ -551,8 +551,8 @@ export default function Home() {
 
           {/* Main Content - Exchange/Withdraw Widget */}
           <div className="w-full max-w-md">
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-xl h-[600px] flex flex-col">
-              <Tabs defaultValue="exchange" className="flex flex-col flex-1">
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-xl h-[600px] flex flex-col overflow-hidden">
+              <Tabs defaultValue="exchange" className="flex flex-col flex-1 min-h-0">
                 <TabsList className="grid w-full grid-cols-2 bg-white/5 border border-white/10 p-1 h-auto mb-6">
                   <TabsTrigger
                     value="exchange"
@@ -568,7 +568,7 @@ export default function Home() {
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="exchange" className="flex-1 mt-0">
+                <TabsContent value="exchange" className="flex-1 min-h-0 mt-0">
                   <SwapCard
                     selectedToken={selectedDestToken}
                     swapAmount={swapAmount}
@@ -587,7 +587,7 @@ export default function Home() {
                   />
                 </TabsContent>
 
-                <TabsContent value="withdraw" className="flex-1 mt-0">
+                <TabsContent value="withdraw" className="flex-1 min-h-0 mt-0">
                   <TransferCard
                     universalAccount={universalAccount}
                     totalBalance={balance?.totalAmountInUSD || 0}
@@ -609,6 +609,31 @@ export default function Home() {
                 </TabsContent>
               </Tabs>
             </div>
+
+            {/* Transaction Success Notification - below the card */}
+            {transactionHash && (
+              <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl backdrop-blur-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                    <p className="text-sm text-green-400 font-semibold">
+                      Transaction Submitted!
+                    </p>
+                  </div>
+                  <a
+                    href={`https://universalx.app/activity/details?id=${transactionHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-purple-400 hover:text-purple-300 inline-flex items-center gap-1.5 transition-colors"
+                  >
+                    View on Explorer
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
 
           {showSelectionPanel && (
