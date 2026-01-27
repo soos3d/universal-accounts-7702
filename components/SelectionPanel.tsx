@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { availableAssets, availableChains, withdrawChains, LOGO_URLS } from "@/lib/utils";
 import { LIFI_CHAINS, getLiFiChainById } from "@/lib/lifi";
 import type { LiFiToken } from "@/lib/lifi-tokens";
-import { Search } from "lucide-react";
+import type { AvailablePrimaryToken } from "@/lib/pay-with";
+import { Search, Wallet } from "lucide-react";
 
 interface SelectionPanelProps {
-  type: "token" | "chain" | "withdrawChain" | "lifiChain" | "lifiToken" | "allTokens";
+  type: "token" | "chain" | "withdrawChain" | "lifiChain" | "lifiToken" | "allTokens" | "payWith";
   onSelect: (value: string) => void;
   onClose: () => void;
   // LI.FI token props (for lifiToken and allTokens types)
@@ -15,6 +16,8 @@ interface SelectionPanelProps {
   onSearchTokens?: (query: string, chainId?: number) => LiFiToken[];
   onGetAllTokens?: () => LiFiToken[];
   selectedChainId?: number; // Required for lifiToken to filter tokens
+  // Pay-with props
+  availablePrimaryTokens?: AvailablePrimaryToken[];
 }
 
 const PLACEHOLDER_TOKEN_LOGO = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png";
@@ -27,6 +30,7 @@ export function SelectionPanel({
   onSearchTokens,
   onGetAllTokens,
   selectedChainId,
+  availablePrimaryTokens,
 }: SelectionPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -83,6 +87,8 @@ export function SelectionPanel({
         return "Select Chain";
       case "chain":
         return "Select Chain";
+      case "payWith":
+        return "Pay With";
       default:
         return "Select";
     }
@@ -268,6 +274,67 @@ export function SelectionPanel({
                     </button>
                   );
                 })
+              )}
+            </div>
+          ) : type === "payWith" ? (
+            // Pay With Token List
+            <div className="space-y-1">
+              {/* Any Token option */}
+              <button
+                onClick={() => {
+                  onSelect("any");
+                  onClose();
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-colors text-left"
+              >
+                <div className="w-8 h-8 rounded-full bg-purple-600/30 flex items-center justify-center">
+                  <Wallet className="w-4 h-4 text-purple-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-white font-medium">Any Token</span>
+                  <p className="text-xs text-gray-500">Most efficient routing</p>
+                </div>
+              </button>
+
+              {/* Divider */}
+              {availablePrimaryTokens && availablePrimaryTokens.length > 0 && (
+                <div className="border-t border-white/10 my-2" />
+              )}
+
+              {/* Available primary tokens */}
+              {availablePrimaryTokens?.map((token) => (
+                <button
+                  key={token.tokenType}
+                  onClick={() => {
+                    onSelect(token.tokenType.toString());
+                    onClose();
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-colors text-left"
+                >
+                  <img
+                    src={token.logoUrl}
+                    alt={token.symbol}
+                    width={32}
+                    height={32}
+                    className="rounded-full"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = PLACEHOLDER_TOKEN_LOGO;
+                    }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-white font-medium">{token.symbol}</span>
+                    <p className="text-xs text-gray-500">
+                      ${token.amountInUSD.toFixed(2)} available
+                    </p>
+                  </div>
+                </button>
+              ))}
+
+              {/* Empty state when no tokens available */}
+              {(!availablePrimaryTokens || availablePrimaryTokens.length === 0) && (
+                <div className="text-center py-4 text-gray-400 text-sm">
+                  No tokens with balance
+                </div>
               )}
             </div>
           ) : (

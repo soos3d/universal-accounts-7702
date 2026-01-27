@@ -28,6 +28,13 @@ import { useLiFiBalances } from "@/hooks/useLiFiBalances";
 import type { LiFiToken } from "@/lib/lifi-tokens";
 import type { TokenBalance } from "@/lib/lifi-balances";
 import { createBuyTransaction } from "@/lib/buy-transaction";
+import {
+  type PayWithOption,
+  getAvailablePrimaryTokens,
+  payWithOptionToTokenArray,
+  getAvailableBalanceForPayWith,
+} from "@/lib/pay-with";
+import { SUPPORTED_TOKEN_TYPE } from "@particle-network/universal-account-sdk";
 import { createSellTransaction } from "@/lib/sell-transaction";
 import { handleEIP7702Authorizations } from "@/lib/eip7702";
 
@@ -89,8 +96,28 @@ export default function Home() {
 
   // Selection panel state
   const [showSelectionPanel, setShowSelectionPanel] = useState<
-    "token" | "chain" | "withdrawChain" | "lifiChain" | "lifiToken" | "allTokens" | null
+    "token" | "chain" | "withdrawChain" | "lifiChain" | "lifiToken" | "allTokens" | "payWith" | null
   >(null);
+
+  // Pay-with state
+  const [selectedPayWithToken, setSelectedPayWithToken] = useState<PayWithOption>({ type: "any" });
+
+  // Compute available primary tokens from balance
+  const availablePrimaryTokens = React.useMemo(() => {
+    return getAvailablePrimaryTokens(balance);
+  }, [balance]);
+
+  // Reset pay-with selection if selected token no longer has balance
+  useEffect(() => {
+    if (selectedPayWithToken.type === "specific") {
+      const tokenStillAvailable = availablePrimaryTokens.some(
+        (t) => t.tokenType === selectedPayWithToken.token
+      );
+      if (!tokenStillAvailable) {
+        setSelectedPayWithToken({ type: "any" });
+      }
+    }
+  }, [availablePrimaryTokens, selectedPayWithToken]);
 
   // Sell token state
   const [selectedSellToken, setSelectedSellToken] = useState<TokenBalance | null>(null);
@@ -322,9 +349,13 @@ export default function Home() {
       return;
     }
 
-    // Validate sufficient balance
-    const totalBalance = balance?.totalAmountInUSD ?? 0;
-    if (parsedAmount > totalBalance) {
+    // Validate sufficient balance (respects pay-with selection)
+    const availableBalance = getAvailableBalanceForPayWith(
+      selectedPayWithToken,
+      balance,
+      availablePrimaryTokens
+    );
+    if (parsedAmount > availableBalance) {
       alert("Insufficient balance");
       return;
     }
@@ -333,12 +364,19 @@ export default function Home() {
     setTransactionHash(null);
 
     try {
+      // Log the pay-with selection for debugging
+      const usePrimaryTokens = payWithOptionToTokenArray(selectedPayWithToken);
+      console.log("[Swap] Selected pay-with option:", selectedPayWithToken);
+      console.log("[Swap] usePrimaryTokens array:", usePrimaryTokens);
+      console.log("[Swap] Available primary tokens:", availablePrimaryTokens);
+
       // 1. Create buy transaction using UA's native method
-      const { transaction, description } = await createBuyTransaction({
+      const { transaction } = await createBuyTransaction({
         chainId: selectedDestChainId,
         tokenAddress: selectedDestToken.address,
         amountInUSD: swapAmount,
         universalAccount,
+        usePrimaryTokens,
       });
 
       // 2. Handle EIP-7702 authorizations if needed
@@ -371,6 +409,7 @@ export default function Home() {
       setSelectedDestChainId(null);
       setSelectedDestToken(null);
       setSwapAmount("");
+      setSelectedPayWithToken({ type: "any" });
 
       // Refresh balance after successful swap
       fetchBalance();
@@ -542,6 +581,9 @@ export default function Home() {
                       ensureTokensLoaded();
                       setShowSelectionPanel("allTokens");
                     }}
+                    selectedPayWithToken={selectedPayWithToken}
+                    availablePrimaryTokens={availablePrimaryTokens}
+                    onOpenPayWithSelection={() => setShowSelectionPanel("payWith")}
                   />
                 </TabsContent>
 
@@ -577,6 +619,21 @@ export default function Home() {
                   handleTokenSelect(value);
                 } else if (showSelectionPanel === "withdrawChain") {
                   setWithdrawSelectedChain(value);
+                } else if (showSelectionPanel === "payWith") {
+                  if (value === "any") {
+                    setSelectedPayWithToken({ type: "any" });
+                  } else {
+                    // Find the matching token from available tokens by string comparison
+                    const matchingToken = availablePrimaryTokens.find(
+                      (t) => String(t.tokenType) === value
+                    );
+                    if (matchingToken) {
+                      setSelectedPayWithToken({
+                        type: "specific",
+                        token: matchingToken.tokenType,
+                      });
+                    }
+                  }
                 }
               }}
               onClose={() => setShowSelectionPanel(null)}
@@ -584,6 +641,7 @@ export default function Home() {
               onSearchTokens={searchTokens}
               onGetAllTokens={getAllTokensSorted}
               selectedChainId={selectedDestChainId ?? undefined}
+              availablePrimaryTokens={availablePrimaryTokens}
             />
           )}
 

@@ -1,5 +1,6 @@
 import {
   CHAIN_ID,
+  SUPPORTED_TOKEN_TYPE,
   type UniversalAccount,
 } from "@particle-network/universal-account-sdk";
 
@@ -30,6 +31,8 @@ export interface BuyTransactionParams {
   amountInUSD: string;
   /** Universal Account instance */
   universalAccount: UniversalAccount;
+  /** Optional: Specific primary tokens to use for the purchase. Empty array = any token (most efficient) */
+  usePrimaryTokens?: SUPPORTED_TOKEN_TYPE[];
 }
 
 export interface BuyTransactionResult {
@@ -56,7 +59,7 @@ export interface BuyTransactionResult {
 export async function createBuyTransaction(
   params: BuyTransactionParams
 ): Promise<BuyTransactionResult> {
-  const { chainId, tokenAddress, amountInUSD, universalAccount } = params;
+  const { chainId, tokenAddress, amountInUSD, universalAccount, usePrimaryTokens = [] } = params;
 
   const uaChainId = LIFI_TO_UA_CHAIN_ID[chainId];
   if (!uaChainId) {
@@ -65,12 +68,18 @@ export async function createBuyTransaction(
     );
   }
 
+  // Log what we're passing to the SDK
+  console.log("[BuyTransaction] Creating transaction with usePrimaryTokens:", usePrimaryTokens);
+
   const transaction = await universalAccount.createBuyTransaction({
     token: {
       chainId: uaChainId,
       address: tokenAddress,
     },
     amountInUSD,
+  },
+  {
+    usePrimaryTokens,
   });
 
   const description = `Buy $${amountInUSD} of tokens`;

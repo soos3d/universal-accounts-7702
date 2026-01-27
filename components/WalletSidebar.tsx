@@ -218,9 +218,9 @@ export function WalletSidebar({
         <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
           {activeTab === "balance" ? (
             <div className="space-y-2">
-              {/* Primary Assets from Particle SDK */}
+              {/* Primary Assets from Particle SDK - filter out dust (< $0.01) */}
               {balance?.assets
-                ?.filter((asset) => asset.amountInUSD > 0)
+                ?.filter((asset) => asset.amountInUSD >= 0.01)
                 .map((asset) => (
                   <div
                     key={`primary-${asset.tokenType}`}
@@ -320,7 +320,7 @@ export function WalletSidebar({
                               {token.symbol}
                             </p>
                             <p className="text-xs text-gray-400">
-                              {amountFormatted.toFixed(4)}
+                              {amountFormatted.toFixed(4)} {chain ? `· ${chain.name}` : ""}
                             </p>
                           </div>
                         </div>
@@ -346,7 +346,7 @@ export function WalletSidebar({
               )}
 
               {/* Empty state */}
-              {!balance?.assets?.filter((a) => a.amountInUSD > 0).length &&
+              {!balance?.assets?.filter((a) => a.amountInUSD >= 0.01).length &&
                 !filteredLifiBalances.length &&
                 !isLoadingBalance &&
                 !isLoadingLifiBalances && (

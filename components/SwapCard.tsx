@@ -1,12 +1,14 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import type { IAssetsResponse } from "@particle-network/universal-account-sdk";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ArrowDown, ExternalLink } from "lucide-react";
+import { ChevronDown, ArrowDown, ExternalLink, Wallet } from "lucide-react";
 import type { LiFiToken } from "@/lib/lifi-tokens";
 import { getLiFiChainById } from "@/lib/lifi";
+import type { PayWithOption, AvailablePrimaryToken } from "@/lib/pay-with";
+import { getAvailableBalanceForPayWith } from "@/lib/pay-with";
 
 const PLACEHOLDER_TOKEN_LOGO = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png";
 
@@ -19,6 +21,10 @@ interface SwapCardProps {
   onAmountChange: (amount: string) => void;
   onSwap: () => void;
   onOpenTokenSelection: () => void;
+  // Pay-with props
+  selectedPayWithToken: PayWithOption;
+  availablePrimaryTokens: AvailablePrimaryToken[];
+  onOpenPayWithSelection: () => void;
 }
 
 export function SwapCard({
@@ -30,18 +36,41 @@ export function SwapCard({
   onAmountChange,
   onSwap,
   onOpenTokenSelection,
+  selectedPayWithToken,
+  availablePrimaryTokens,
+  onOpenPayWithSelection,
 }: SwapCardProps) {
   // Get chain from selected token
   const selectedChain = selectedToken ? getLiFiChainById(selectedToken.chainId) : null;
 
-  // Get total balance from Universal Account
-  const totalBalance = balance?.totalAmountInUSD ?? 0;
+  // Get available balance based on pay-with selection
+  const availableBalance = useMemo(() => {
+    return getAvailableBalanceForPayWith(
+      selectedPayWithToken,
+      balance,
+      availablePrimaryTokens
+    );
+  }, [selectedPayWithToken, balance, availablePrimaryTokens]);
+
+  // Get display info for selected pay-with token
+  const payWithDisplay = useMemo(() => {
+    if (selectedPayWithToken.type === "any") {
+      return { symbol: "Any Token", logoUrl: null };
+    }
+    const token = availablePrimaryTokens.find(
+      (t) => t.tokenType === selectedPayWithToken.token
+    );
+    return {
+      symbol: token?.symbol ?? "Token",
+      logoUrl: token?.logoUrl ?? null,
+    };
+  }, [selectedPayWithToken, availablePrimaryTokens]);
 
   // Send amount in USD
   const sendAmountUSD = swapAmount ? parseFloat(swapAmount) : 0;
 
   // Check if amount exceeds balance
-  const insufficientBalance = sendAmountUSD > totalBalance;
+  const insufficientBalance = sendAmountUSD > availableBalance;
 
   return (
     <div className="flex flex-col flex-1">
@@ -128,17 +157,50 @@ export function SwapCard({
         {/* Balance Info */}
         <div className="mt-2 flex items-center justify-between text-sm">
           <span className={insufficientBalance ? "text-red-400" : "text-gray-400"}>
-            {insufficientBalance ? "Insufficient balance" : `Available: $${totalBalance.toFixed(2)}`}
+            {insufficientBalance ? "Insufficient balance" : `Available: $${availableBalance.toFixed(2)}`}
           </span>
-          {totalBalance > 0 && (
+          {availableBalance > 0 && (
             <button
-              onClick={() => onAmountChange(totalBalance.toFixed(2))}
+              onClick={() => onAmountChange(availableBalance.toFixed(2))}
               className="text-purple-400 hover:text-purple-300 text-xs font-medium transition-colors"
             >
               MAX
             </button>
           )}
         </div>
+      </div>
+
+      {/* Pay With Selector */}
+      <div className="bg-white/5 rounded-xl p-4 mt-3 border border-white/10">
+        <span className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-2 block">
+          Pay With
+        </span>
+        <Button
+          variant="ghost"
+          onClick={onOpenPayWithSelection}
+          className="h-auto p-0 hover:bg-transparent text-base font-medium text-white w-full justify-start"
+        >
+          <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2 border border-white/10 w-full">
+            {payWithDisplay.logoUrl ? (
+              <img
+                src={payWithDisplay.logoUrl}
+                alt={payWithDisplay.symbol}
+                width={20}
+                height={20}
+                className="rounded-full"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = PLACEHOLDER_TOKEN_LOGO;
+                }}
+              />
+            ) : (
+              <div className="w-5 h-5 rounded-full bg-purple-600/30 flex items-center justify-center">
+                <Wallet className="w-3 h-3 text-purple-400" />
+              </div>
+            )}
+            <span className="flex-1 text-left text-sm">{payWithDisplay.symbol}</span>
+            <ChevronDown className="w-4 h-4 text-gray-400" />
+          </div>
+        </Button>
       </div>
 
       {/* Exchange Button */}
