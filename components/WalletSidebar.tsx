@@ -1,8 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Copy, LogOut } from "lucide-react";
-import { truncateAddress, copyToClipboard, LOGO_URLS } from "@/lib/utils";
+import { RefreshCw, Copy, LogOut, X, Check } from "lucide-react";
+import { truncateAddress, copyToClipboard, LOGO_URLS, SUPPORTED_CHAINS } from "@/lib/utils";
 import { TransactionList, type Transaction } from "@/components/TransactionList";
 import type { IAssetsResponse } from "@particle-network/universal-account-sdk";
 import type { TokenBalance } from "@/lib/lifi-balances";
@@ -48,6 +48,16 @@ export function WalletSidebar({
   onTokenClick,
 }: WalletSidebarProps) {
   const [activeTab, setActiveTab] = useState<TabType>("balance");
+  const [showChainsDialog, setShowChainsDialog] = useState(false);
+  const [copiedAddress, setCopiedAddress] = useState<"evm" | "sol" | null>(null);
+
+  const evmChains = SUPPORTED_CHAINS.filter(c => c.type === "evm");
+
+  const handleCopyAddress = async (address: string | undefined, type: "evm" | "sol") => {
+    await copyToClipboard(address);
+    setCopiedAddress(type);
+    setTimeout(() => setCopiedAddress(null), 1500);
+  };
 
   // Filter LI.FI balances to exclude tokens already in primary assets and dust amounts
   const filteredLifiBalances = useMemo(() => {
@@ -93,69 +103,104 @@ export function WalletSidebar({
   return (
     <div className="w-72 shrink-0">
       <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl sticky top-4 h-[600px] flex flex-col">
-        <div className="p-4 border-b border-white/10 shrink-0">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-500 to-purple-600 flex items-center justify-center shrink-0">
-                <svg
-                  className="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                  />
+        <div className="p-3 border-b border-white/10 shrink-0">
+          {/* Header row */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                 </svg>
               </div>
-              <div className="flex flex-col gap-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <code className="text-sm text-white font-mono">
-                    {truncateAddress(smartAccountAddresses?.ownerAddress || "")}
-                  </code>
-                  <Button
-                    type="button"
-                    onClick={() =>
-                      copyToClipboard(smartAccountAddresses?.ownerAddress)
-                    }
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-400 hover:text-purple-300 transition-colors h-auto p-1 rounded hover:bg-white/5"
-                  >
-                    <Copy className="w-3 h-3" />
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <code className="text-xs text-gray-400 font-mono">
-                    {truncateAddress(
-                      smartAccountAddresses?.solanaUaAddress || ""
-                    )}
-                  </code>
-                  <Button
-                    type="button"
-                    onClick={() =>
-                      copyToClipboard(smartAccountAddresses?.solanaUaAddress)
-                    }
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-400 hover:text-purple-300 transition-colors h-auto p-1 rounded hover:bg-white/5"
-                  >
-                    <Copy className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
+              <span className="text-sm font-medium text-white">Universal Account</span>
             </div>
             <Button
               onClick={onLogout}
               variant="ghost"
               size="sm"
-              className="text-gray-400 hover:text-red-400 transition-colors h-auto p-2 rounded-lg hover:bg-white/5 shrink-0"
+              className="text-gray-400 hover:text-red-400 transition-colors h-auto p-1.5 rounded-lg hover:bg-white/5"
             >
               <LogOut className="w-4 h-4" />
             </Button>
+          </div>
+
+          {/* Addresses - compact layout */}
+          <div className="space-y-1.5">
+            {/* EVM Address */}
+            <div className="flex items-center justify-between bg-white/5 rounded-lg px-2.5 py-1.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-[9px] text-gray-500 uppercase tracking-wider font-medium shrink-0">EVM</span>
+                <code className="text-xs text-white font-mono truncate">
+                  {truncateAddress(smartAccountAddresses?.ownerAddress || "")}
+                </code>
+              </div>
+              <Button
+                type="button"
+                onClick={() => handleCopyAddress(smartAccountAddresses?.ownerAddress, "evm")}
+                variant="ghost"
+                size="sm"
+                className={`transition-all duration-200 h-auto p-1 rounded shrink-0 ${
+                  copiedAddress === "evm"
+                    ? "text-green-400 bg-green-400/10"
+                    : "text-gray-400 hover:text-purple-300 hover:bg-white/10"
+                }`}
+              >
+                {copiedAddress === "evm" ? (
+                  <Check className="w-3 h-3" />
+                ) : (
+                  <Copy className="w-3 h-3" />
+                )}
+              </Button>
+            </div>
+
+            {/* Solana Address */}
+            <div className="flex items-center justify-between bg-white/5 rounded-lg px-2.5 py-1.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-[9px] text-gray-500 uppercase tracking-wider font-medium">SOL</span>
+                  <img src={LOGO_URLS.Solana} alt="Solana" className="w-3 h-3 rounded-full" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                </div>
+                <code className="text-xs text-gray-300 font-mono truncate">
+                  {truncateAddress(smartAccountAddresses?.solanaUaAddress || "")}
+                </code>
+              </div>
+              <Button
+                type="button"
+                onClick={() => handleCopyAddress(smartAccountAddresses?.solanaUaAddress, "sol")}
+                variant="ghost"
+                size="sm"
+                className={`transition-all duration-200 h-auto p-1 rounded shrink-0 ${
+                  copiedAddress === "sol"
+                    ? "text-green-400 bg-green-400/10"
+                    : "text-gray-400 hover:text-purple-300 hover:bg-white/10"
+                }`}
+              >
+                {copiedAddress === "sol" ? (
+                  <Check className="w-3 h-3" />
+                ) : (
+                  <Copy className="w-3 h-3" />
+                )}
+              </Button>
+            </div>
+
+            {/* Supported Chains Button */}
+            <button
+              onClick={() => setShowChainsDialog(true)}
+              className="w-full flex items-center justify-center gap-2 py-1.5 text-[10px] text-gray-400 hover:text-gray-300 transition-colors"
+            >
+              <div className="flex -space-x-1">
+                {evmChains.slice(0, 6).map((chain) => (
+                  <img
+                    key={chain.name}
+                    src={chain.logo}
+                    alt={chain.name}
+                    className="w-3.5 h-3.5 rounded-full ring-1 ring-gray-800"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                ))}
+              </div>
+              <span>{SUPPORTED_CHAINS.length} chains supported</span>
+            </button>
           </div>
         </div>
 
@@ -366,6 +411,66 @@ export function WalletSidebar({
           )}
         </div>
       </div>
+
+      {/* Supported Chains Dialog */}
+      {showChainsDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowChainsDialog(false)}
+          />
+          <div className="relative bg-gray-900 border border-white/10 rounded-2xl p-4 w-72 max-h-[80vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-white">Supported Chains</h3>
+              <button
+                onClick={() => setShowChainsDialog(false)}
+                className="p-1 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* EVM Chains */}
+            <div className="mb-3">
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium mb-2">
+                EVM Networks ({evmChains.length})
+              </p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {evmChains.map((chain) => (
+                  <div
+                    key={chain.name}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/5"
+                  >
+                    <img
+                      src={chain.logo}
+                      alt={chain.name}
+                      className="w-4 h-4 rounded-full"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                    <span className="text-xs text-gray-300 truncate">{chain.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Solana */}
+            <div>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium mb-2">
+                Non-EVM Networks (1)
+              </p>
+              <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/5">
+                <img
+                  src={LOGO_URLS.Solana}
+                  alt="Solana"
+                  className="w-4 h-4 rounded-full"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+                <span className="text-xs text-gray-300">Solana</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -57,7 +57,7 @@ export default function Home() {
 
   // Get embedded wallet address for LI.FI balance fetching
   const embeddedWalletAddress = wallets?.find(
-    (w) => w.walletClientType === "privy"
+    (w) => w.walletClientType === "privy",
   )?.address;
 
   // Token balances hook (fetches ALL ERC-20 tokens via Moralis)
@@ -96,11 +96,19 @@ export default function Home() {
 
   // Selection panel state
   const [showSelectionPanel, setShowSelectionPanel] = useState<
-    "token" | "chain" | "withdrawChain" | "lifiChain" | "lifiToken" | "allTokens" | "payWith" | null
+    | "token"
+    | "chain"
+    | "withdrawChain"
+    | "lifiChain"
+    | "lifiToken"
+    | "allTokens"
+    | "payWith"
+    | null
   >(null);
 
   // Pay-with state
-  const [selectedPayWithToken, setSelectedPayWithToken] = useState<PayWithOption>({ type: "any" });
+  const [selectedPayWithToken, setSelectedPayWithToken] =
+    useState<PayWithOption>({ type: "any" });
 
   // Compute available primary tokens from balance
   const availablePrimaryTokens = React.useMemo(() => {
@@ -111,7 +119,7 @@ export default function Home() {
   useEffect(() => {
     if (selectedPayWithToken.type === "specific") {
       const tokenStillAvailable = availablePrimaryTokens.some(
-        (t) => t.tokenType === selectedPayWithToken.token
+        (t) => t.tokenType === selectedPayWithToken.token,
       );
       if (!tokenStillAvailable) {
         setSelectedPayWithToken({ type: "any" });
@@ -120,9 +128,12 @@ export default function Home() {
   }, [availablePrimaryTokens, selectedPayWithToken]);
 
   // Sell token state
-  const [selectedSellToken, setSelectedSellToken] = useState<TokenBalance | null>(null);
+  const [selectedSellToken, setSelectedSellToken] =
+    useState<TokenBalance | null>(null);
   const [isSelling, setIsSelling] = useState(false);
-  const [sellTransactionHash, setSellTransactionHash] = useState<string | null>(null);
+  const [sellTransactionHash, setSellTransactionHash] = useState<string | null>(
+    null,
+  );
 
   const [transactions, setTransactions] = useState<
     Array<{
@@ -338,7 +349,12 @@ export default function Home() {
   const handleSwap = async () => {
     const embeddedWallet = wallets?.find((w) => w.walletClientType === "privy");
 
-    if (!universalAccount || !selectedDestChainId || !selectedDestToken || !embeddedWallet) {
+    if (
+      !universalAccount ||
+      !selectedDestChainId ||
+      !selectedDestToken ||
+      !embeddedWallet
+    ) {
       return;
     }
 
@@ -353,7 +369,7 @@ export default function Home() {
     const availableBalance = getAvailableBalanceForPayWith(
       selectedPayWithToken,
       balance,
-      availablePrimaryTokens
+      availablePrimaryTokens,
     );
     if (parsedAmount > availableBalance) {
       alert("Insufficient balance");
@@ -531,116 +547,138 @@ export default function Home() {
           authenticated={authenticated}
         />
       ) : (
-        <div className="w-full flex justify-center gap-6 relative z-10 px-4">
-          <WalletSidebar
-            smartAccountAddresses={smartAccountAddresses}
-            balance={balance}
-            isLoadingBalance={isLoadingBalance}
-            onRefreshBalance={fetchBalance}
-            onLogout={logout}
-            transactions={transactions}
-            isLoadingTransactions={isLoadingTransactions}
-            hasNextPage={hasNextPage}
-            onLoadMoreTransactions={handleLoadMoreTransactions}
-            isLoadingMoreTransactions={isLoadingMoreTransactions}
-            onTabChange={handleTabChange}
-            lifiBalances={lifiBalances}
-            isLoadingLifiBalances={isLoadingLifiBalances}
-            onTokenClick={setSelectedSellToken}
-          />
+        <div className="w-full max-w-4xl relative z-10 px-4">
+          <h1 className="text-2xl font-bold text-center text-white mb-18">
+            Using 7702 with Particle Network: Walkthrough & Demo App
+          </h1>
+          <div className="flex justify-center gap-6">
+            <WalletSidebar
+              smartAccountAddresses={smartAccountAddresses}
+              balance={balance}
+              isLoadingBalance={isLoadingBalance}
+              onRefreshBalance={fetchBalance}
+              onLogout={logout}
+              transactions={transactions}
+              isLoadingTransactions={isLoadingTransactions}
+              hasNextPage={hasNextPage}
+              onLoadMoreTransactions={handleLoadMoreTransactions}
+              isLoadingMoreTransactions={isLoadingMoreTransactions}
+              onTabChange={handleTabChange}
+              lifiBalances={lifiBalances}
+              isLoadingLifiBalances={isLoadingLifiBalances}
+              onTokenClick={setSelectedSellToken}
+            />
 
-          {/* Main Content - Exchange/Withdraw Widget */}
-          <div className="w-full max-w-md">
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-xl h-[600px] flex flex-col overflow-hidden">
-              <Tabs defaultValue="exchange" className="flex flex-col flex-1 min-h-0">
-                <TabsList className="grid w-full grid-cols-2 bg-white/5 border border-white/10 p-1 h-auto mb-6">
-                  <TabsTrigger
-                    value="exchange"
-                    className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 text-gray-400 py-2.5 rounded-lg transition-all duration-200"
-                  >
-                    Exchange
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="withdraw"
-                    className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 text-gray-400 py-2.5 rounded-lg transition-all duration-200"
-                  >
-                    Withdraw
-                  </TabsTrigger>
-                </TabsList>
+            {/* Main Content - Exchange/Withdraw Widget */}
+            <div className="w-full max-w-md">
+              <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-xl h-[600px] flex flex-col overflow-hidden">
+                <Tabs
+                  defaultValue="exchange"
+                  className="flex flex-col flex-1 min-h-0"
+                >
+                  <TabsList className="grid w-full grid-cols-2 bg-white/5 border border-white/10 p-1 h-auto mb-6">
+                    <TabsTrigger
+                      value="exchange"
+                      className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 text-gray-400 py-2.5 rounded-lg transition-all duration-200"
+                    >
+                      Exchange
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="withdraw"
+                      className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 text-gray-400 py-2.5 rounded-lg transition-all duration-200"
+                    >
+                      Withdraw
+                    </TabsTrigger>
+                  </TabsList>
 
-                <TabsContent value="exchange" className="flex-1 min-h-0 mt-0">
-                  <SwapCard
-                    selectedToken={selectedDestToken}
-                    swapAmount={swapAmount}
-                    isSending={isSending}
-                    transactionHash={transactionHash}
-                    balance={balance}
-                    onAmountChange={setSwapAmount}
-                    onSwap={handleSwap}
-                    onOpenTokenSelection={() => {
-                      ensureTokensLoaded();
-                      setShowSelectionPanel("allTokens");
-                    }}
-                    selectedPayWithToken={selectedPayWithToken}
-                    availablePrimaryTokens={availablePrimaryTokens}
-                    onOpenPayWithSelection={() => setShowSelectionPanel("payWith")}
-                  />
-                </TabsContent>
+                  <TabsContent value="exchange" className="flex-1 min-h-0 mt-0">
+                    <SwapCard
+                      selectedToken={selectedDestToken}
+                      swapAmount={swapAmount}
+                      isSending={isSending}
+                      transactionHash={transactionHash}
+                      balance={balance}
+                      onAmountChange={setSwapAmount}
+                      onSwap={handleSwap}
+                      onOpenTokenSelection={() => {
+                        ensureTokensLoaded();
+                        setShowSelectionPanel("allTokens");
+                      }}
+                      selectedPayWithToken={selectedPayWithToken}
+                      availablePrimaryTokens={availablePrimaryTokens}
+                      onOpenPayWithSelection={() =>
+                        setShowSelectionPanel("payWith")
+                      }
+                    />
+                  </TabsContent>
 
-                <TabsContent value="withdraw" className="flex-1 min-h-0 mt-0">
-                  <TransferCard
-                    universalAccount={universalAccount}
-                    totalBalance={balance?.totalAmountInUSD || 0}
-                    isSending={isSending}
-                    onSendingChange={setIsSending}
-                    onSuccess={() => fetchBalance()}
-                    onRefreshBalance={fetchBalance}
-                    signMessage={signMessage}
-                    signAuthorization={signAuthorization}
-                    walletAddress={
-                      wallets?.find((w) => w.walletClientType === "privy")
-                        ?.address || ""
-                    }
-                    selectedChain={withdrawSelectedChain}
-                    onOpenChainSelection={() =>
-                      setShowSelectionPanel("withdrawChain")
-                    }
-                  />
-                </TabsContent>
-              </Tabs>
+                  <TabsContent value="withdraw" className="flex-1 min-h-0 mt-0">
+                    <TransferCard
+                      universalAccount={universalAccount}
+                      totalBalance={balance?.totalAmountInUSD || 0}
+                      isSending={isSending}
+                      onSendingChange={setIsSending}
+                      onSuccess={() => fetchBalance()}
+                      onRefreshBalance={fetchBalance}
+                      signMessage={signMessage}
+                      signAuthorization={signAuthorization}
+                      walletAddress={
+                        wallets?.find((w) => w.walletClientType === "privy")
+                          ?.address || ""
+                      }
+                      selectedChain={withdrawSelectedChain}
+                      onOpenChainSelection={() =>
+                        setShowSelectionPanel("withdrawChain")
+                      }
+                    />
+                  </TabsContent>
+                </Tabs>
+              </div>
+
+              {/* Transaction Success Notification - below the card */}
+              {transactionHash && (
+                <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl backdrop-blur-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                      <p className="text-sm text-green-400 font-semibold">
+                        Transaction Submitted!
+                      </p>
+                    </div>
+                    <a
+                      href={`https://universalx.app/activity/details?id=${transactionHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-purple-400 hover:text-purple-300 inline-flex items-center gap-1.5 transition-colors"
+                    >
+                      View on Explorer
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                        />
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Transaction Success Notification - below the card */}
-            {transactionHash && (
-              <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl backdrop-blur-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                    <p className="text-sm text-green-400 font-semibold">
-                      Transaction Submitted!
-                    </p>
-                  </div>
-                  <a
-                    href={`https://universalx.app/activity/details?id=${transactionHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-purple-400 hover:text-purple-300 inline-flex items-center gap-1.5 transition-colors"
-                  >
-                    View on Explorer
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </a>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {showSelectionPanel && (
+            {showSelectionPanel && (
             <SelectionPanel
               type={showSelectionPanel}
               onSelect={(value) => {
-                if (showSelectionPanel === "allTokens" || showSelectionPanel === "lifiToken") {
+                if (
+                  showSelectionPanel === "allTokens" ||
+                  showSelectionPanel === "lifiToken"
+                ) {
                   handleTokenSelect(value);
                 } else if (showSelectionPanel === "withdrawChain") {
                   setWithdrawSelectedChain(value);
@@ -650,7 +688,7 @@ export default function Home() {
                   } else {
                     // Find the matching token from available tokens by string comparison
                     const matchingToken = availablePrimaryTokens.find(
-                      (t) => String(t.tokenType) === value
+                      (t) => String(t.tokenType) === value,
                     );
                     if (matchingToken) {
                       setSelectedPayWithToken({
@@ -669,6 +707,7 @@ export default function Home() {
               availablePrimaryTokens={availablePrimaryTokens}
             />
           )}
+          </div>
 
           {/* Sell Token Dialog */}
           <SellTokenDialog

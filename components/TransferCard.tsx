@@ -245,16 +245,16 @@ export function TransferCard({
           </div>
         </Button>
       </div>
+      </div>
 
-      {/* Transfer Button */}
+      {/* Transfer Button - outside scroll area */}
       <Button
         onClick={handleTransfer}
         disabled={isButtonDisabled}
-        className="w-full mt-4 bg-linear-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 disabled:from-gray-700 disabled:to-gray-600 disabled:text-gray-500 text-white font-semibold py-4 rounded-xl transition-all duration-200 h-auto shadow-lg hover:shadow-purple-500/30 disabled:shadow-none"
+        className="w-full mt-4 shrink-0 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 disabled:from-gray-700 disabled:to-gray-600 disabled:text-gray-500 text-white font-semibold py-4 rounded-xl transition-all duration-200 h-auto shadow-lg hover:shadow-purple-500/30 disabled:shadow-none"
       >
         {getButtonText()}
       </Button>
-      </div>
     </div>
   );
 }

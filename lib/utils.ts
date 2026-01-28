@@ -82,6 +82,22 @@ export const withdrawChains = Object.keys(withdrawChainUSDCAddresses);
 export const availableAssets = ["USDC", "USDT", "ETH", "BTC", "SOL", "BNB"];
 export const availableChains = Object.keys(chainIdMap);
 
+// Supported chains for Universal Accounts (EIP-7702 mode)
+export const SUPPORTED_CHAINS = [
+  { name: "Ethereum", logo: LOGO_URLS.Ethereum, type: "evm" as const },
+  { name: "Optimism", logo: LOGO_URLS.Optimism, type: "evm" as const },
+  { name: "Arbitrum", logo: LOGO_URLS.Arbitrum, type: "evm" as const },
+  { name: "Base", logo: LOGO_URLS.Base, type: "evm" as const },
+  { name: "BNB Chain", logo: LOGO_URLS["BNB Chain"], type: "evm" as const },
+  { name: "Berachain", logo: LOGO_URLS.Berachain, type: "evm" as const },
+  { name: "Sonic", logo: LOGO_URLS.Sonic, type: "evm" as const },
+  { name: "Polygon", logo: LOGO_URLS.Polygon, type: "evm" as const },
+  { name: "X Layer", logo: LOGO_URLS["X Layer"], type: "evm" as const },
+  { name: "Solana", logo: LOGO_URLS.Solana, type: "solana" as const },
+];
+
+export const EVM_SUPPORTED_CHAINS = SUPPORTED_CHAINS.filter(c => c.type === "evm");
+
 // Transaction history utilities
 const chainIdToName: Record<number, string> = {
   [CHAIN_ID.ETHEREUM_MAINNET]: "Ethereum",

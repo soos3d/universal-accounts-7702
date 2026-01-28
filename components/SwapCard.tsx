@@ -133,6 +133,39 @@ export function SwapCard({
         </div>
       </div>
 
+      {/* Pay With Selector */}
+      <div className="bg-white/5 rounded-xl p-5 mb-3 border border-white/10">
+        <span className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-3 block">
+          Pay With
+        </span>
+        <Button
+          variant="ghost"
+          onClick={onOpenPayWithSelection}
+          className="h-auto p-0 hover:bg-transparent text-base font-medium text-white w-full justify-start"
+        >
+          <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2 border border-white/10 w-full">
+            {payWithDisplay.logoUrl ? (
+              <img
+                src={payWithDisplay.logoUrl}
+                alt={payWithDisplay.symbol}
+                width={20}
+                height={20}
+                className="rounded-full"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = PLACEHOLDER_TOKEN_LOGO;
+                }}
+              />
+            ) : (
+              <div className="w-5 h-5 rounded-full bg-purple-600/30 flex items-center justify-center">
+                <Wallet className="w-3 h-3 text-purple-400" />
+              </div>
+            )}
+            <span className="flex-1 text-left text-sm">{payWithDisplay.symbol}</span>
+            <ChevronDown className="w-4 h-4 text-gray-400" />
+          </div>
+        </Button>
+      </div>
+
       {/* Arrow Separator */}
       <div className="flex justify-center -my-2 relative z-10">
         <div className="bg-white/10 rounded-lg p-2 border border-white/20 backdrop-blur-sm">
@@ -170,39 +203,6 @@ export function SwapCard({
             </button>
           )}
         </div>
-      </div>
-
-      {/* Pay With Selector */}
-      <div className="bg-white/5 rounded-xl p-4 mt-3 border border-white/10">
-        <span className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-2 block">
-          Pay With
-        </span>
-        <Button
-          variant="ghost"
-          onClick={onOpenPayWithSelection}
-          className="h-auto p-0 hover:bg-transparent text-base font-medium text-white w-full justify-start"
-        >
-          <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2 border border-white/10 w-full">
-            {payWithDisplay.logoUrl ? (
-              <img
-                src={payWithDisplay.logoUrl}
-                alt={payWithDisplay.symbol}
-                width={20}
-                height={20}
-                className="rounded-full"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = PLACEHOLDER_TOKEN_LOGO;
-                }}
-              />
-            ) : (
-              <div className="w-5 h-5 rounded-full bg-purple-600/30 flex items-center justify-center">
-                <Wallet className="w-3 h-3 text-purple-400" />
-              </div>
-            )}
-            <span className="flex-1 text-left text-sm">{payWithDisplay.symbol}</span>
-            <ChevronDown className="w-4 h-4 text-gray-400" />
-          </div>
-        </Button>
       </div>
 
       {/* Exchange Button */}
