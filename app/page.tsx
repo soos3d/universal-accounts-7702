@@ -570,7 +570,7 @@ export default function Home() {
             />
 
             {/* Main Content - Exchange/Withdraw Widget */}
-            <div className="w-full max-w-md">
+            <div className="w-96 shrink-0">
               <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-xl h-[600px] flex flex-col overflow-hidden">
                 <Tabs
                   defaultValue="exchange"
